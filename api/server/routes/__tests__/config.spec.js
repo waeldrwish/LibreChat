@@ -9,6 +9,15 @@ jest.mock('~/server/services/Config/ldap', () => ({
   getLdapConfig: jest.fn(() => null),
 }));
 
+/** In-app admin panel off by default so the unrelated capability assertions below hold. */
+const mockAdminPanel = { enabled: false, language: 'ar' };
+jest.mock('~/server/services/Governance', () => ({
+  governance: {
+    getSettings: () => ({ adminPanel: mockAdminPanel }),
+    filterModelSpecs: async ({ modelSpecs }) => modelSpecs,
+  },
+}));
+
 const mockHasCapability = jest.fn();
 const mockHasConfigCapability = jest.fn();
 jest.mock('~/server/middleware/roles/capabilities', () => ({
@@ -711,6 +720,22 @@ describe('GET /api/config', () => {
 
       expect(response.body.allowAccountDeletion).toBe(true);
       expect(mockHasCapability).not.toHaveBeenCalled();
+    });
+
+    it('advertises the in-app admin panel and its language only to ACCESS_ADMIN holders', async () => {
+      mockAdminPanel.enabled = true;
+      mockGetAppConfig.mockResolvedValue(baseAppConfig);
+      try {
+        mockHasCapability.mockResolvedValue(true);
+        let response = await request(createApp(mockUser)).get('/api/config');
+        expect(response.body.adminPanel).toEqual({ language: 'ar' });
+
+        mockHasCapability.mockResolvedValue(false);
+        response = await request(createApp(mockUser)).get('/api/config');
+        expect(response.body.adminPanel).toBeUndefined();
+      } finally {
+        mockAdminPanel.enabled = false;
+      }
     });
 
     it('should include adminPanelURL for users with ACCESS_ADMIN capability', async () => {

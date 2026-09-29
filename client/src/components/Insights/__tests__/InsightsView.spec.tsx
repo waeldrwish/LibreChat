@@ -53,6 +53,7 @@ jest.mock('~/components/Chat/Menus/OpenSidebar', () => ({
 
 jest.mock('~/components/ui', () => ({
   LocalizedDateRangePicker: () => null,
+  DashboardPanel: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
 }));
 
 function lastQueryParams(): TInsightsParams {

@@ -75,7 +75,7 @@ const TableHead: React.ForwardRefExoticComponent<
     <th
       ref={ref}
       className={cn(
-        'h-12 px-4 text-left align-middle font-medium text-text-secondary [&:has([role=checkbox])]:pr-0',
+        'h-12 px-4 text-start align-middle font-medium text-text-secondary [&:has([role=checkbox])]:pe-0',
         className,
       )}
       {...props}
@@ -90,7 +90,7 @@ const TableCell: React.ForwardRefExoticComponent<
   ({ className, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn('p-4 align-middle [&:has([role=checkbox])]:pr-0', className)}
+      className={cn('p-4 align-middle [&:has([role=checkbox])]:pe-0', className)}
       {...props}
     />
   ),
@@ -105,7 +105,7 @@ const TableRowHeader: React.ForwardRefExoticComponent<
       ref={ref}
       scope="row"
       className={cn(
-        'p-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0',
+        'p-4 text-start align-middle font-medium [&:has([role=checkbox])]:pe-0',
         className,
       )}
       {...props}

@@ -19,6 +19,7 @@ import dashboardRoutes from './Dashboard';
 import WithRum from '~/lib/rum/WithRum';
 import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
+import adminRoutes from './Admin';
 import Search from './Search';
 import Root from './Root';
 
@@ -123,6 +124,7 @@ export const router = createBrowserRouter(
           ],
         },
         dashboardRoutes,
+        adminRoutes,
         {
           path: '/',
           element: <Root />,

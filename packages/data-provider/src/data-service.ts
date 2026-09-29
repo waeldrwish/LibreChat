@@ -6,8 +6,13 @@ import type {
   TTraceRecordParams,
   TTraceRecordDetail,
 } from './types/traces';
+import type {
+  TModelPolicy,
+  TGovernanceConfig,
+  TModelPolicyInput,
+  TModelPolicyUpdate,
+} from './governance';
 import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
-import type { TGovernanceConfig, TModelPolicy, TModelPolicyInput } from './governance';
 import type { TFileConfig } from './file-config';
 import type * as adm from './types/admin';
 import type * as tl from './types/tools';
@@ -1835,7 +1840,7 @@ export function createAdminModelPolicy(body: TModelPolicyInput): Promise<{ polic
 
 export function updateAdminModelPolicy(
   id: string,
-  body: Partial<TModelPolicyInput>,
+  body: TModelPolicyUpdate,
 ): Promise<{ policy: TModelPolicy }> {
   return request.patch(endpoints.adminModelPolicy(id), body);
 }
@@ -1892,4 +1897,19 @@ export function listAdminAuditLog(
   params: adm.TAdminAuditLogParams,
 ): Promise<adm.TAdminAuditLogPage> {
   return request.get(endpoints.adminAuditLog(params));
+}
+
+export function verifyAdminAuditLog(): Promise<{ ok: boolean; checked: number }> {
+  return request.get(endpoints.adminAuditLogVerify());
+}
+
+/** Downloads the filtered audit log as CSV; rejects with `{ response: { status } }` on failure. */
+export async function exportAdminAuditLog(params: adm.TAdminAuditLogParams): Promise<Blob> {
+  const response = await request.authenticatedFetch(endpoints.adminAuditLogExport(params));
+  if (!response.ok) {
+    throw Object.assign(new Error('Audit log export failed'), {
+      response: { status: response.status },
+    });
+  }
+  return response.blob();
 }

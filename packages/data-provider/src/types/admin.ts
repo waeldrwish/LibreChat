@@ -290,7 +290,7 @@ export type TAdminGroupRecord = {
   updatedAt?: string;
 };
 
-export type TAdminRolesPage = TAdminPage<'roles', TAdminRole>;
+export type TAdminRolesPage = TAdminPage<'roles', Pick<TAdminRole, '_id' | 'name' | 'description'>>;
 export type TAdminGroupsPage = TAdminPage<'groups', TAdminGroupRecord>;
 export type TAdminMembersPage = TAdminPage<'members', AdminMember>;
 

@@ -127,6 +127,13 @@ export type TModelPolicy = {
 
 export type TModelPolicyInput = Omit<TModelPolicy, 'id' | 'createdAt' | 'updatedAt'>;
 
+/** `maxOutputTokens: null` removes the cap. */
+export type TModelPolicyUpdate = Partial<
+  Omit<TModelPolicyInput, 'endpoint' | 'model' | 'maxOutputTokens'>
+> & {
+  maxOutputTokens?: number | null;
+};
+
 /** Stable key for a model within an endpoint: `endpoint|model`. */
 export function modelKey(endpoint: string, model: string): string {
   return `${endpoint}|${model}`;

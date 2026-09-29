@@ -341,7 +341,8 @@ router.get('/', async function (req, res) {
     }
 
     const adminPanelURL = process.env.ADMIN_PANEL_URL;
-    if (adminPanelURL || !payload.allowAccountDeletion) {
+    const inAppAdminPanel = governance.getSettings(appConfig).adminPanel;
+    if (adminPanelURL || inAppAdminPanel.enabled || !payload.allowAccountDeletion) {
       try {
         const userId = req.user.id ?? req.user._id?.toString();
         if (userId) {
@@ -351,6 +352,9 @@ router.get('/', async function (req, res) {
           );
           if (hasAdminAccess && adminPanelURL) {
             payload.adminPanelURL = adminPanelURL;
+          }
+          if (hasAdminAccess && inAppAdminPanel.enabled) {
+            payload.adminPanel = { language: inAppAdminPanel.language };
           }
           if (hasAdminAccess && !payload.allowAccountDeletion) {
             payload.allowAccountDeletion = true;

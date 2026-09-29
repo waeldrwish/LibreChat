@@ -23,11 +23,11 @@ import type {
   TInsightsUser,
 } from 'librechat-data-provider';
 import type { TranslationKeys } from '~/hooks';
+import { DashboardPanel as Panel, LocalizedDateRangePicker } from '~/components/ui';
 import { clearAgentFilters, shouldRecoverAgentFilters } from './agentFilters';
 import { useGetStartupConfig, useInsightsQuery } from '~/data-provider';
 import { useAuthContext, useDocumentTitle, useLocalize } from '~/hooks';
 import OpenSidebar from '~/components/Chat/Menus/OpenSidebar';
-import { LocalizedDateRangePicker } from '~/components/ui';
 import { getRollingDateRange } from './dateRange';
 import { cn } from '~/utils';
 
@@ -107,23 +107,6 @@ function responseStatus(error: unknown) {
 function getShortcutDateRange(range: ShortcutRange) {
   const days = ranges.find((item) => item.value === range)?.days ?? 7;
   return getRollingDateRange(new Date(), days);
-}
-
-function Panel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <section
-      className={cn(
-        'min-w-0 rounded-lg border border-border-light bg-surface-primary p-5',
-        /** Dark mode only: Click UI gives dashboard widgets their own surface and
-         *  stroke, a step lighter than the page behind them. Light mode keeps the
-         *  shared surface/border tokens. */
-        'dark:border-chart-widget-stroke dark:bg-chart-widget-surface',
-        className,
-      )}
-    >
-      {children}
-    </section>
-  );
 }
 
 function EmptyState({ message }: { message: string }) {

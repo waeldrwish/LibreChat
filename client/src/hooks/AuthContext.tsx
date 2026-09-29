@@ -148,7 +148,9 @@ const AuthContextProvider = ({
     onError: (error: TResError | unknown) => {
       const resError = error as TResError;
       const code = resError.response?.data?.code;
-      doSetError(code === ErrorTypes.AUTH_CROSS_ORIGIN ? code : resError.message);
+      const isKnownCode =
+        code === ErrorTypes.AUTH_CROSS_ORIGIN || code === ErrorTypes.ACCOUNT_DISABLED;
+      doSetError(isKnownCode ? code : resError.message);
       // Preserve a valid redirect_to across login failures so the deep link survives retries.
       // Cannot use buildLoginRedirectUrl() here — it reads the current pathname (already /login)
       // and would return plain /login, dropping the redirect_to destination.

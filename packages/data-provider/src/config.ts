@@ -2351,6 +2351,8 @@ export type TStartupConfig = {
   helpAndFaqURL: string;
   /** Admin panel link, only present for users with admin access */
   adminPanelURL?: string;
+  /** In-app admin panel, only present for users who may open it */
+  adminPanel?: { language: string };
   customFooter?: string;
   modelSpecs?: TSpecsConfig;
   modelDescriptions?: Record<string, Record<string, string>>;

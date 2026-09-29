@@ -2,6 +2,7 @@ import { ErrorTypes, ViolationTypes } from 'librechat-data-provider';
 import type { ComponentType } from 'react';
 import type { ErrorRendererProps } from './parts';
 import type { TranslationKeys } from '~/hooks';
+import UsageLimitError from './UsageLimitError';
 import { ProviderErrorCodes } from './parts';
 import ProviderError from './ProviderError';
 import UserKeyError from './UserKeyError';
@@ -44,6 +45,8 @@ export const errorCopy: Record<string, TranslationKeys> = {
   [ViolationTypes.VERIFY_EMAIL_LIMIT]: 'com_error_verify_email_limit',
   [ViolationTypes.NON_BROWSER]: 'com_error_non_browser',
   [ViolationTypes.GENERAL]: 'com_error_request_blocked',
+  [ErrorTypes.AGENT_DISABLED]: 'com_error_agent_disabled',
+  [ErrorTypes.ACCOUNT_DISABLED]: 'com_error_account_disabled',
 };
 
 /** Codes whose copy depends on payload fields, deployment capabilities or the user's rights. */
@@ -75,4 +78,5 @@ export const errorRenderers: Record<string, ComponentType<ErrorRendererProps>> =
   [ViolationTypes.FILE_UPLOAD_LIMIT]: LimitError,
   [ViolationTypes.TTS_LIMIT]: LimitError,
   [ViolationTypes.STT_LIMIT]: LimitError,
+  [ViolationTypes.USAGE_LIMIT]: UsageLimitError,
 };
