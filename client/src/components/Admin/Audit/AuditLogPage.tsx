@@ -8,7 +8,7 @@ import type {
   AdminAuditLogEntry,
   TAdminAuditLogParams,
 } from 'librechat-data-provider';
-import type { TranslationKeys } from '~/hooks';
+import { ACTION_LABELS, CATEGORY_LABELS, OUTCOME_LABELS, useAuditLabel } from './labels';
 import { Empty, PageHeader, Panel, QueryState, useAdminNotify } from '../common/ui';
 import { LocalizedDateRangePicker } from '~/components/ui';
 import { useAdminAuditLogQuery } from '~/data-provider';
@@ -21,13 +21,9 @@ import { cn } from '~/utils';
 const ALL = '__all__';
 const PAGE_SIZE = 50;
 
-const actionKey = (action: string) =>
-  `com_admin_audit_action_${action.replace(/\./g, '_')}` as TranslationKeys;
-const categoryKey = (category: string) => `com_admin_audit_category_${category}` as TranslationKeys;
-const outcomeKey = (outcome: string) => `com_admin_audit_outcome_${outcome}` as TranslationKeys;
-
 function EntryRow({ entry }: { entry: AdminAuditLogEntry }) {
   const localize = useLocalize();
+  const label = useAuditLabel();
   const format = useAdminFormat();
   const [open, setOpen] = useState(false);
   const metadata = Object.entries(entry.metadata ?? {});
@@ -45,11 +41,11 @@ function EntryRow({ entry }: { entry: AdminAuditLogEntry }) {
         <span className="min-w-0 flex-1">
           <span className="block text-sm text-text-primary">
             <strong className="font-medium">{entry.actor.name}</strong>{' '}
-            {localize(actionKey(entry.action))}{' '}
+            {label(ACTION_LABELS, entry.action)}{' '}
             {entry.target.name && <span className="font-medium">{entry.target.name}</span>}
           </span>
           <span className="mt-0.5 block text-xs text-text-secondary">
-            {format.dateTime(entry.timestamp)} · {localize(categoryKey(entry.category))}
+            {format.dateTime(entry.timestamp)} · {label(CATEGORY_LABELS, entry.category)}
             {entry.context?.ip && (
               <>
                 {' · '}
@@ -67,7 +63,7 @@ function EntryRow({ entry }: { entry: AdminAuditLogEntry }) {
                 : 'bg-status-warning-subtle text-text-primary',
             )}
           >
-            {localize(outcomeKey(entry.outcome))}
+            {label(OUTCOME_LABELS, entry.outcome)}
           </span>
           <ChevronDown
             className={cn(
@@ -127,6 +123,7 @@ function EntryRow({ entry }: { entry: AdminAuditLogEntry }) {
 export default function AuditLogPage() {
   const localize = useLocalize();
   const notify = useAdminNotify();
+  const label = useAuditLabel();
   const { locale } = useAdmin();
   const [search, setSearch] = useState('');
   const [actor, setActor] = useState('');
@@ -236,7 +233,7 @@ export default function AuditLogPage() {
               { value: ALL, label: localize('com_admin_filter_all_categories') },
               ...AUDIT_CATEGORIES.map((item) => ({
                 value: item,
-                label: localize(categoryKey(item)),
+                label: label(CATEGORY_LABELS, item),
               })),
             ]}
           />
@@ -247,7 +244,10 @@ export default function AuditLogPage() {
             onChange={resetPaging(setOutcome)}
             options={[
               { value: ALL, label: localize('com_admin_filter_all_outcomes') },
-              ...AUDIT_OUTCOMES.map((item) => ({ value: item, label: localize(outcomeKey(item)) })),
+              ...AUDIT_OUTCOMES.map((item) => ({
+                value: item,
+                label: label(OUTCOME_LABELS, item),
+              })),
             ]}
           />
           <div className="flex min-w-0 items-center gap-2">
