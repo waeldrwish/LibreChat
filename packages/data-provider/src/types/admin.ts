@@ -3,6 +3,7 @@ import type {
   TModelPolicy,
   TAccessSource,
   UsageLimitMetric,
+  TGovernanceConfig,
   AccessPrincipalType,
 } from '../governance';
 import type { TRole } from '../roles';
@@ -547,6 +548,40 @@ export type TAdminOverview = {
   topModels: TUsageByModel[];
   topUsers: TUsageByUser[];
   series: TUsagePoint[];
+};
+
+/* ── Groups, grants, settings ───────────────────────────────────────── */
+
+export type TAdminGroupInput = {
+  name: string;
+  description?: string;
+  email?: string;
+  memberIds?: string[];
+};
+
+export type TAdminGrant = {
+  principalType: string;
+  principalId: string;
+  capability: string;
+  grantedAt?: string;
+};
+
+/** Deployment facts the settings page shows read-only (they come from the environment). */
+export type TAdminAuthSettings = {
+  emailLoginEnabled: boolean;
+  registrationEnabled: boolean;
+  passwordResetEnabled: boolean;
+  socialLogins: string[];
+  openidEnabled: boolean;
+  samlEnabled: boolean;
+  ldapEnabled: boolean;
+};
+
+export type TAdminSettings = {
+  governance: TGovernanceConfig;
+  auth: TAdminAuthSettings;
+  balance: { enabled: boolean; startBalance?: number };
+  transactions: { enabled: boolean };
 };
 
 /* ── Usage limits ───────────────────────────────────────────────────── */

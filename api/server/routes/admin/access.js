@@ -24,6 +24,18 @@ const principalLookups = {
   role: (id) => db.getRoleByName(id),
 };
 
+const principalNameResolvers = {
+  user: async (ids) => {
+    const { users } = await db.listAdminUsers({ userIds: ids, limit: ids.length, offset: 0 });
+    return new Map(users.map((user) => [user._id, user.name || user.email]));
+  },
+  group: async (ids) => {
+    const groups = await Promise.all(ids.map((id) => db.findGroupById(id, { name: 1 })));
+    return new Map(groups.filter(Boolean).map((group) => [group._id.toString(), group.name]));
+  },
+  role: async (ids) => new Map(ids.map((id) => [id, id])),
+};
+
 const handlers = createAdminAccessHandlers({
   governance,
   resolveScope,
@@ -46,6 +58,8 @@ const handlers = createAdminAccessHandlers({
   setPrincipalModelGrants: db.setPrincipalModelGrants,
   findUsageLimitsForPrincipals: db.findUsageLimitsForPrincipals,
   setUsageLimits: db.setUsageLimits,
+  listUsageLimits: db.listUsageLimits,
+  resolvePrincipalNames: (type, ids) => principalNameResolvers[type](ids),
   listPrincipalAgentAccess: db.listPrincipalAgentAccess,
   findAgentRefs: db.findAgentRefs,
   grantAgentViewer: ({ principalType, principalId, resourceId, grantedBy }) =>
@@ -64,6 +78,7 @@ const handlers = createAdminAccessHandlers({
 
 router.use(requireJwtAuth, requireAdminAccess);
 
+router.get('/limits', handlers.listLimits);
 router.get('/:principalType/:principalId', handlers.getAccess);
 router.put('/:principalType/:principalId', handlers.updateAccess);
 

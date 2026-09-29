@@ -102,6 +102,28 @@ export enum QueryKeys {
   agentQueuedTurns = 'agentQueuedTurns',
   /* Combined Pinned-section display order (favorites + pinned chats) */
   pinnedOrder = 'pinnedOrder',
+  /* In-app admin panel */
+  adminSession = 'adminSession',
+  adminOverview = 'adminOverview',
+  adminSettings = 'adminSettings',
+  adminUsers = 'adminUsers',
+  adminUser = 'adminUser',
+  adminUserSearch = 'adminUserSearch',
+  adminEffectiveAccess = 'adminEffectiveAccess',
+  adminGroups = 'adminGroups',
+  adminGroup = 'adminGroup',
+  adminGroupMembers = 'adminGroupMembers',
+  adminRoles = 'adminRoles',
+  adminRole = 'adminRole',
+  adminRoleMembers = 'adminRoleMembers',
+  adminRoleGrants = 'adminRoleGrants',
+  adminModelCatalog = 'adminModelCatalog',
+  adminProviders = 'adminProviders',
+  adminAgents = 'adminAgents',
+  adminAccess = 'adminAccess',
+  adminLimits = 'adminLimits',
+  adminUsage = 'adminUsage',
+  adminAuditLog = 'adminAuditLog',
 }
 
 // Dynamic query keys that require parameters

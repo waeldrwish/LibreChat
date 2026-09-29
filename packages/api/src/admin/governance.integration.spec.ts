@@ -11,9 +11,11 @@ import {
   AccessRoleIds,
   PermissionBits,
 } from 'librechat-data-provider';
-import type { IUser, AllMethods } from '@librechat/data-schemas';
-import type { NextFunction, Request, Response } from 'express';
+import type { IUser, AllMethods, SystemCapability } from '@librechat/data-schemas';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { TModelsConfig } from 'librechat-data-provider';
+import type { ServerRequest } from '~/types/http';
+import type { AdminHandler } from './trail';
 import { createUsageLimitGuard, createGovernanceService } from '~/governance';
 import { generateCapabilityCheck } from '~/middleware/capabilities';
 import { AccessControlService } from '~/acl/accessControlService';
@@ -135,6 +137,8 @@ beforeAll(async () => {
     setPrincipalModelGrants: db.setPrincipalModelGrants,
     findUsageLimitsForPrincipals: db.findUsageLimitsForPrincipals,
     setUsageLimits: db.setUsageLimits,
+    listUsageLimits: db.listUsageLimits,
+    resolvePrincipalNames: async (_type, ids) => new Map(ids.map((id) => [id, id])),
     listPrincipalAgentAccess: db.listPrincipalAgentAccess,
     findAgentRefs: db.findAgentRefs,
     grantAgentViewer: ({ principalType, principalId, resourceId, grantedBy }) =>
@@ -162,14 +166,22 @@ beforeAll(async () => {
     (req as Request & { user?: typeof actor }).user = actor;
     next();
   });
+  const mount =
+    (handler: AdminHandler): RequestHandler =>
+    (req, res) =>
+      void handler(req as ServerRequest, res);
+  const gate =
+    (capability: SystemCapability): RequestHandler =>
+    (req, res, next) =>
+      void requireCapability(capability)(req as ServerRequest, res, next);
   const admin = express.Router();
-  admin.use(requireCapability(SystemCapabilities.ACCESS_ADMIN));
-  admin.get('/users', accounts.list);
-  admin.post('/users', requireCapability(SystemCapabilities.MANAGE_USERS), accounts.create);
-  admin.patch('/users/:id/status', accounts.setStatus);
-  admin.get('/users/:id/effective-access', access.effective);
-  admin.put('/access/:principalType/:principalId', access.updateAccess);
-  admin.put('/groups/:id/managers', teams.setManagers);
+  admin.use(gate(SystemCapabilities.ACCESS_ADMIN));
+  admin.get('/users', mount(accounts.list));
+  admin.post('/users', gate(SystemCapabilities.MANAGE_USERS), mount(accounts.create));
+  admin.patch('/users/:id/status', mount(accounts.setStatus));
+  admin.get('/users/:id/effective-access', mount(access.effective));
+  admin.put('/access/:principalType/:principalId', mount(access.updateAccess));
+  admin.put('/groups/:id/managers', mount(teams.setManagers));
   app.use('/admin', admin);
 });
 
@@ -356,7 +368,9 @@ describe('in-app admin panel governance (real database)', () => {
         onExceeded,
         deny: (_req, res, error) => res.status(429).json(error),
       }),
-      (_req, res) => res.status(200).json({ ok: true }),
+      (_req, res) => {
+        res.status(200).json({ ok: true });
+      },
     );
 
     const refused = await request(chat).post('/chat').send({ text: 'again' }).expect(429);
@@ -376,7 +390,9 @@ describe('in-app admin panel governance (real database)', () => {
     staffChat.post(
       '/chat',
       createUsageLimitGuard({ governance, deny: (_req, res) => res.status(429).end() }),
-      (_req, res) => res.status(200).end(),
+      (_req, res) => {
+        res.status(200).end();
+      },
     );
     await request(staffChat).post('/chat').expect(200);
   });

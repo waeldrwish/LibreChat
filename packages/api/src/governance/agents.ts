@@ -36,24 +36,30 @@ function requestedAgentIds(body: ChatBody | undefined): string[] {
 /** Refuses a chat turn that would run an agent an administrator disabled. */
 export function createDisabledAgentGuard(
   deps: DisabledAgentGuardDeps,
-): (req: Request, res: Response, next: NextFunction) => Promise<unknown> {
-  return async function disabledAgentGuard(req: Request, res: Response, next: NextFunction) {
+): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+  return async function disabledAgentGuard(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     const agentIds = deps.resolveAgentIds
       ? deps.resolveAgentIds(req).filter((id) => id.length > 0 && !isEphemeralAgentId(id))
       : requestedAgentIds(req.body as ChatBody | undefined);
     if (agentIds.length === 0) {
-      return next();
+      next();
+      return;
     }
     try {
       const disabled = await Promise.all(agentIds.map((agentId) => deps.isAgentDisabled(agentId)));
       const index = disabled.findIndex(Boolean);
       if (index === -1) {
-        return next();
+        next();
+        return;
       }
-      return deps.deny(req, res, { type: ErrorTypes.AGENT_DISABLED, info: agentIds[index] });
+      await deps.deny(req, res, { type: ErrorTypes.AGENT_DISABLED, info: agentIds[index] });
     } catch (error) {
       logger.error('[disabledAgentGuard] Failed to check agent status', error);
-      return next(error);
+      next(error);
     }
   };
 }

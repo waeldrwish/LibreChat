@@ -7,7 +7,9 @@ import type {
   TTraceRecordDetail,
 } from './types/traces';
 import type { TInsightsAccessResponse, TInsightsParams, TInsightsResponse } from './types/insights';
+import type { TGovernanceConfig, TModelPolicy, TModelPolicyInput } from './governance';
 import type { TFileConfig } from './file-config';
+import type * as adm from './types/admin';
 import type * as tl from './types/tools';
 import type * as t from './types';
 import * as permissions from './accessPermissions';
@@ -1658,3 +1660,236 @@ export interface ActiveJobsResponse {
 export const getActiveJobs = (): Promise<ActiveJobsResponse> => {
   return request.get(endpoints.activeJobs());
 };
+
+/* In-app admin panel */
+export function getAdminSession(): Promise<adm.TAdminSession> {
+  return request.get(endpoints.adminPanelSession());
+}
+
+export function getAdminOverview(timeZone?: string): Promise<adm.TAdminOverview> {
+  return request.get(endpoints.adminOverview(timeZone));
+}
+
+export function getAdminSettings(): Promise<adm.TAdminSettings> {
+  return request.get(endpoints.adminSettings());
+}
+
+export function updateAdminSettings(
+  governance: TGovernanceConfig,
+): Promise<{ governance: TGovernanceConfig }> {
+  return request.put(endpoints.adminSettings(), { governance });
+}
+
+export function listAdminUsers(params: adm.TAdminUserParams): Promise<adm.TAdminUsersPage> {
+  return request.get(endpoints.adminUsers(params));
+}
+
+export function searchAdminUsers(q: string): Promise<{ users: adm.AdminUserSearchResult[] }> {
+  return request.get(endpoints.adminUserSearch(q));
+}
+
+export function getAdminUser(id: string): Promise<{ user: adm.TAdminUser }> {
+  return request.get(endpoints.adminUser(id));
+}
+
+export function createAdminUser(
+  body: adm.TAdminCreateUserRequest,
+): Promise<{ user: adm.TAdminUser }> {
+  return request.post(endpoints.adminUsers(), body);
+}
+
+export function updateAdminUser(
+  id: string,
+  body: adm.TAdminUpdateUserRequest,
+): Promise<{ user: adm.TAdminUser }> {
+  return request.patch(endpoints.adminUser(id), body);
+}
+
+export function setAdminUserStatus(
+  id: string,
+  disabled: boolean,
+): Promise<{ user: adm.TAdminUser }> {
+  return request.patch(endpoints.adminUserStatus(id), { disabled });
+}
+
+export function resetAdminUserPassword(id: string, password: string): Promise<{ success: true }> {
+  return request.post(endpoints.adminUserPassword(id), { password });
+}
+
+export function getAdminEffectiveAccess(id: string): Promise<adm.TEffectiveAccess> {
+  return request.get(endpoints.adminUserEffectiveAccess(id));
+}
+
+export function listAdminGroups(
+  params: { search?: string; limit?: number; offset?: number } = {},
+): Promise<adm.TAdminGroupsPage> {
+  return request.get(endpoints.adminGroups(params));
+}
+
+export function getAdminGroup(id: string): Promise<{ group: adm.TAdminGroupRecord }> {
+  return request.get(endpoints.adminGroup(id));
+}
+
+export function createAdminGroup(
+  body: adm.TAdminGroupInput,
+): Promise<{ group: adm.TAdminGroupRecord }> {
+  return request.post(endpoints.adminGroups(), { ...body, source: 'local' });
+}
+
+export function updateAdminGroup(
+  id: string,
+  body: Partial<adm.TAdminGroupInput>,
+): Promise<{ group: adm.TAdminGroupRecord }> {
+  return request.patch(endpoints.adminGroup(id), body);
+}
+
+export function deleteAdminGroup(id: string): Promise<{ success: true }> {
+  return request.delete(endpoints.adminGroup(id));
+}
+
+export function listAdminGroupMembers(
+  id: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<adm.TAdminMembersPage> {
+  return request.get(endpoints.adminGroupMembers(id, params));
+}
+
+export function addAdminGroupMember(id: string, userId: string): Promise<unknown> {
+  return request.post(endpoints.adminGroupMembers(id), { userId });
+}
+
+export function removeAdminGroupMember(id: string, userId: string): Promise<unknown> {
+  return request.delete(endpoints.adminGroupMember(id, userId));
+}
+
+export function setAdminGroupManagers(
+  id: string,
+  managerIds: string[],
+): Promise<{ group: adm.TAdminGroupRecord }> {
+  return request.put(endpoints.adminGroupManagers(id), { managerIds });
+}
+
+export function listAdminRoles(): Promise<adm.TAdminRolesPage> {
+  return request.get(endpoints.adminRolesList({ limit: 200 }));
+}
+
+export function getAdminRole(name: string): Promise<{ role: adm.TAdminRole }> {
+  return request.get(endpoints.adminRole(name));
+}
+
+export function createAdminRole(body: {
+  name: string;
+  description?: string;
+}): Promise<{ role: adm.TAdminRole }> {
+  return request.post(endpoints.adminRolesList(), body);
+}
+
+export function updateAdminRole(
+  name: string,
+  body: { name?: string; description?: string },
+): Promise<{ role: adm.TAdminRole }> {
+  return request.patch(endpoints.adminRole(name), body);
+}
+
+export function deleteAdminRole(name: string): Promise<{ success: true }> {
+  return request.delete(endpoints.adminRole(name));
+}
+
+export function updateAdminRolePermissions(
+  name: string,
+  permissions: adm.TAdminRole['permissions'],
+): Promise<{ role: adm.TAdminRole }> {
+  return request.patch(endpoints.adminRolePermissions(name), { permissions });
+}
+
+export function listAdminRoleMembers(
+  name: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<adm.TAdminMembersPage> {
+  return request.get(endpoints.adminRoleMembers(name, params));
+}
+
+export function getAdminRoleGrants(name: string): Promise<{ grants: adm.TAdminGrant[] }> {
+  return request.get(endpoints.adminRoleGrants(name));
+}
+
+export function assignAdminRoleGrant(name: string, capability: string): Promise<unknown> {
+  return request.post(endpoints.adminGrants(), {
+    principalType: 'role',
+    principalId: name,
+    capability,
+  });
+}
+
+export function revokeAdminRoleGrant(name: string, capability: string): Promise<unknown> {
+  return request.delete(endpoints.adminRoleGrant(name, capability));
+}
+
+export function getAdminModelCatalog(): Promise<adm.TModelCatalog> {
+  return request.get(endpoints.adminModelCatalog());
+}
+
+export function createAdminModelPolicy(body: TModelPolicyInput): Promise<{ policy: TModelPolicy }> {
+  return request.post(endpoints.adminModelPolicies(), body);
+}
+
+export function updateAdminModelPolicy(
+  id: string,
+  body: Partial<TModelPolicyInput>,
+): Promise<{ policy: TModelPolicy }> {
+  return request.patch(endpoints.adminModelPolicy(id), body);
+}
+
+export function deleteAdminModelPolicy(id: string): Promise<{ success: true }> {
+  return request.delete(endpoints.adminModelPolicy(id));
+}
+
+export function getAdminProviders(): Promise<adm.TProviders> {
+  return request.get(endpoints.adminProviders());
+}
+
+export function updateAdminProviders(
+  providers: adm.TManagedProvider[],
+): Promise<{ success: true }> {
+  return request.put(endpoints.adminProviders(), { providers });
+}
+
+export function listAdminAgents(params: adm.TAdminAgentsParams): Promise<adm.TAdminAgentsPage> {
+  return request.get(endpoints.adminAgents(params));
+}
+
+export function setAdminAgentStatus(
+  id: string,
+  disabled: boolean,
+): Promise<{ agent: adm.TAdminAgent }> {
+  return request.patch(endpoints.adminAgentStatus(id), { disabled });
+}
+
+export function getAdminAccess(
+  principalType: string,
+  principalId: string,
+): Promise<adm.TPrincipalAccess> {
+  return request.get(endpoints.adminAccess(principalType, principalId));
+}
+
+export function updateAdminAccess(
+  principalType: string,
+  principalId: string,
+  body: adm.TPrincipalAccessUpdate,
+): Promise<adm.TPrincipalAccess> {
+  return request.put(endpoints.adminAccess(principalType, principalId), body);
+}
+
+export function listAdminLimits(): Promise<{ limits: adm.TUsageLimitEntry[] }> {
+  return request.get(endpoints.adminLimits());
+}
+
+export function getAdminUsage(params: adm.TUsageParams): Promise<adm.TUsageReport> {
+  return request.get(endpoints.adminUsage(params));
+}
+
+export function listAdminAuditLog(
+  params: adm.TAdminAuditLogParams,
+): Promise<adm.TAdminAuditLogPage> {
+  return request.get(endpoints.adminAuditLog(params));
+}

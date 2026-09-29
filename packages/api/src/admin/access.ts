@@ -11,6 +11,7 @@ import type {
   TModelsConfig,
   TEffectiveAccess,
   TPrincipalAccess,
+  TUsageLimitEntry,
   AccessPrincipalType,
 } from 'librechat-data-provider';
 import type {
@@ -65,6 +66,9 @@ export interface AdminAccessDeps {
   setPrincipalModelGrants: GovernanceMethods['setPrincipalModelGrants'];
   findUsageLimitsForPrincipals: GovernanceMethods['findUsageLimitsForPrincipals'];
   setUsageLimits: GovernanceMethods['setUsageLimits'];
+  listUsageLimits: GovernanceMethods['listUsageLimits'];
+  /** Display names for principals, keyed by id; missing ids are shown by id. */
+  resolvePrincipalNames: (type: AccessPrincipalType, ids: string[]) => Promise<Map<string, string>>;
   listPrincipalAgentAccess: DirectoryMethods['listPrincipalAgentAccess'];
   findAgentRefs: DirectoryMethods['findAgentRefs'];
   grantAgentViewer: (params: {
@@ -100,7 +104,7 @@ const validModelKeys = (keys: string[]) => keys.every((key) => parseModelKey(key
  */
 export function createAdminAccessHandlers(
   deps: AdminAccessDeps,
-): Record<'getAccess' | 'updateAccess' | 'effective', AdminHandler> {
+): Record<'getAccess' | 'updateAccess' | 'effective' | 'listLimits', AdminHandler> {
   async function canRead(
     actor: AdminActor,
     type: AccessPrincipalType,
@@ -345,5 +349,54 @@ export function createAdminAccessHandlers(
     }
   }
 
-  return { getAccess, updateAccess, effective };
+  /**
+   * Every explicit usage limit with its principal's display name. Managers see only
+   * the user-level limits of their team.
+   */
+  async function listLimits(req: ServerRequest, res: Response): Promise<Response> {
+    try {
+      const actor = resolveAdminActor(req);
+      if (!actor) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      const scope = await deps.resolveScope(actor, SystemCapabilities.READ_USAGE);
+      if (scope.kind === 'none') {
+        return res.status(403).json({ error: 'Insufficient permissions' });
+      }
+      const records = await deps.listUsageLimits();
+      const visible = records.filter(
+        (record) =>
+          scope.kind === 'global' ||
+          (record.principalType === 'user' && scope.userIds.includes(record.principalId)),
+      );
+      const idsByType = new Map<AccessPrincipalType, string[]>();
+      for (const record of visible) {
+        const ids = idsByType.get(record.principalType) ?? [];
+        ids.push(record.principalId);
+        idsByType.set(record.principalType, ids);
+      }
+      const names = new Map<string, string>();
+      await Promise.all(
+        [...idsByType].map(async ([type, ids]) => {
+          const resolved = await deps.resolvePrincipalNames(type, ids);
+          for (const [id, name] of resolved) {
+            names.set(`${type}:${id}`, name);
+          }
+        }),
+      );
+      const limits: TUsageLimitEntry[] = visible.map((record) => ({
+        principalType: record.principalType,
+        principalId: record.principalId,
+        principalName: names.get(`${record.principalType}:${record.principalId}`),
+        limits: record.limits,
+        updatedAt: record.updatedAt?.toISOString(),
+      }));
+      return res.status(200).json({ limits });
+    } catch (error) {
+      logger.error('[adminAccess] listLimits error:', error);
+      return res.status(500).json({ error: 'Failed to list usage limits' });
+    }
+  }
+
+  return { getAccess, updateAccess, effective, listLimits };
 }

@@ -9,6 +9,8 @@ import {
 import type {
   TUsageTotals,
   TAdminScope,
+  TAdminSettings,
+  TAdminAuthSettings,
   TModelsConfig,
   TAdminSession,
   TAdminOverview,
@@ -39,23 +41,8 @@ const panelCapabilities = (): SystemCapability[] => Object.values(SystemCapabili
 const DAY_MS = 24 * 60 * 60 * 1000;
 const OVERVIEW_SERIES_DAYS = 30;
 
-/** Deployment facts the settings page shows read-only (they come from the environment). */
-export type AdminAuthSettings = {
-  emailLoginEnabled: boolean;
-  registrationEnabled: boolean;
-  passwordResetEnabled: boolean;
-  socialLogins: string[];
-  openidEnabled: boolean;
-  samlEnabled: boolean;
-  ldapEnabled: boolean;
-};
-
-export type AdminSettingsResponse = {
-  governance: TGovernanceConfig;
-  auth: AdminAuthSettings;
-  balance: { enabled: boolean; startBalance?: number };
-  transactions: { enabled: boolean };
-};
+export type AdminAuthSettings = TAdminAuthSettings;
+export type AdminSettingsResponse = TAdminSettings;
 
 export interface AdminPanelDeps {
   getHeldCapabilities: (

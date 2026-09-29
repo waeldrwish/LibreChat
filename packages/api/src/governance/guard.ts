@@ -40,12 +40,17 @@ export function toUsageLimitError(exceeded: LimitExceeded): TUsageLimitError {
  */
 export function createUsageLimitGuard(
   deps: UsageLimitGuardDeps,
-): (req: GuardRequest, res: Response, next: NextFunction) => Promise<unknown> {
+): (req: GuardRequest, res: Response, next: NextFunction) => Promise<void> {
   const reported = new TtlCache<true>();
 
-  return async function usageLimitGuard(req: GuardRequest, res: Response, next: NextFunction) {
+  return async function usageLimitGuard(
+    req: GuardRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     if (!req.user || deps.skip?.(req)) {
-      return next();
+      next();
+      return;
     }
     let exceeded: LimitExceeded | null = null;
     try {
@@ -55,11 +60,13 @@ export function createUsageLimitGuard(
       exceeded = check?.exceeded ?? null;
     } catch (error) {
       logger.error('[usageLimitGuard] Failed to evaluate usage limits; allowing request', error);
-      return next();
+      next();
+      return;
     }
 
     if (!exceeded) {
-      return next();
+      next();
+      return;
     }
 
     const userId = req.user.id ?? req.user._id?.toString() ?? '';
@@ -70,6 +77,6 @@ export function createUsageLimitGuard(
         logger.warn('[usageLimitGuard] Failed to record exceeded limit', error),
       );
     }
-    return deps.deny(req, res, toUsageLimitError(exceeded));
+    await deps.deny(req, res, toUsageLimitError(exceeded));
   };
 }

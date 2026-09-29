@@ -4,6 +4,8 @@ import { logger, SystemCapabilities, isValidObjectIdString } from '@librechat/da
 import type {
   IUser,
   AppConfig,
+  BalanceConfig,
+  CreateUserRequest,
   GroupSummary,
   AdminUserRecord,
   DirectoryMethods,
@@ -58,8 +60,8 @@ export interface AdminAccountsDeps {
   groupExists: (groupId: string) => Promise<boolean>;
   countUsersByRole: (role: string) => Promise<number>;
   createUser: (
-    data: Partial<IUser>,
-    balanceConfig?: AppConfig['balance'],
+    data: CreateUserRequest,
+    balanceConfig?: BalanceConfig,
     disableTTL?: boolean,
     returnUser?: boolean,
   ) => Promise<unknown>;

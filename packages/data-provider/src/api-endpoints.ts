@@ -610,3 +610,65 @@ export const getAllEffectivePermissions = (resourceType: ResourceType) =>
 // SharePoint Graph API Token
 export const graphToken = (scopes: string) =>
   `${BASE_URL}/api/auth/graph-token?scopes=${encodeURIComponent(scopes)}`;
+
+/* In-app admin panel */
+const admin = () => `${BASE_URL}/api/admin`;
+const adminId = (base: string, id: string) => `${base}/${encodeURIComponent(id)}`;
+
+export const adminPanelSession = () => `${admin()}/panel/session`;
+export const adminOverview = (timeZone?: string) =>
+  `${admin()}/panel/overview${buildQuery({ timeZone })}`;
+export const adminSettings = () => `${admin()}/panel/settings`;
+
+export const adminUsers = (params: Record<string, unknown> = {}) =>
+  `${admin()}/users${buildQuery(params)}`;
+export const adminUserSearch = (q: string) => `${admin()}/users/search${buildQuery({ q })}`;
+export const adminUser = (id: string) => adminId(`${admin()}/users`, id);
+export const adminUserStatus = (id: string) => `${adminUser(id)}/status`;
+export const adminUserPassword = (id: string) => `${adminUser(id)}/password`;
+export const adminUserEffectiveAccess = (id: string) => `${adminUser(id)}/effective-access`;
+
+export const adminGroups = (params: Record<string, unknown> = {}) =>
+  `${admin()}/groups${buildQuery(params)}`;
+export const adminGroup = (id: string) => adminId(`${admin()}/groups`, id);
+export const adminGroupMembers = (id: string, params: Record<string, unknown> = {}) =>
+  `${adminGroup(id)}/members${buildQuery(params)}`;
+export const adminGroupMember = (id: string, userId: string) =>
+  adminId(`${adminGroup(id)}/members`, userId);
+export const adminGroupManagers = (id: string) => `${adminGroup(id)}/managers`;
+
+export const adminRolesList = (params: Record<string, unknown> = {}) =>
+  `${admin()}/roles${buildQuery(params)}`;
+export const adminRole = (name: string) => adminId(`${admin()}/roles`, name);
+export const adminRolePermissions = (name: string) => `${adminRole(name)}/permissions`;
+export const adminRoleMembers = (name: string, params: Record<string, unknown> = {}) =>
+  `${adminRole(name)}/members${buildQuery(params)}`;
+export const adminRoleMember = (name: string, userId: string) =>
+  adminId(`${adminRole(name)}/members`, userId);
+
+export const adminGrants = () => `${admin()}/grants`;
+export const adminRoleGrants = (name: string) => adminId(`${admin()}/grants/role`, name);
+export const adminRoleGrant = (name: string, capability: string) =>
+  adminId(adminRoleGrants(name), capability);
+
+export const adminModelCatalog = () => `${admin()}/models/catalog`;
+export const adminModelPolicies = () => `${admin()}/models/policies`;
+export const adminModelPolicy = (id: string) => adminId(adminModelPolicies(), id);
+export const adminProviders = () => `${admin()}/models/providers`;
+
+export const adminAgents = (params: Record<string, unknown> = {}) =>
+  `${admin()}/agents${buildQuery(params)}`;
+export const adminAgentStatus = (id: string) => `${adminId(`${admin()}/agents`, id)}/status`;
+
+export const adminAccess = (principalType: string, principalId: string) =>
+  adminId(adminId(`${admin()}/access`, principalType), principalId);
+export const adminLimits = () => `${admin()}/access/limits`;
+
+export const adminUsage = (params: Record<string, unknown>) =>
+  `${admin()}/usage${buildQuery(params)}`;
+
+export const adminAuditLog = (params: Record<string, unknown> = {}) =>
+  `${admin()}/audit-log${buildQuery(params)}`;
+export const adminAuditLogExport = (params: Record<string, unknown> = {}) =>
+  `${admin()}/audit-log/export.csv${buildQuery(params)}`;
+export const adminAuditLogVerify = () => `${admin()}/audit-log/verify`;
