@@ -126,6 +126,8 @@ export interface AdminRolesDeps {
   }) => Promise<void>;
   /** Drops cached prompt group access IDs; role deletion can remove PROMPTGROUP grants. */
   invalidatePromptGroupAccessContext?: () => Promise<void>;
+  /** Removes the role's model grants and usage limits (admin-panel governance). */
+  deletePrincipalGovernance?: (principalType: PrincipalType, principalId: string) => Promise<void>;
   /** Removes all system capability grants held by this principal and returns
    * the removed grants so each can be audited. */
   deleteGrantsForPrincipal: (
@@ -172,6 +174,7 @@ export function createAdminRolesHandlers(deps: AdminRolesDeps): {
     deleteGrantsForPrincipal,
     recordAuditEntry,
     invalidatePromptGroupAccessContext,
+    deletePrincipalGovernance,
   } = deps;
 
   /** Emits a `grant.removed` audit entry for each grant the role-deletion cascade
@@ -454,12 +457,13 @@ export function createAdminRolesHandlers(deps: AdminRolesDeps): {
       }
 
       const tenantId = req.user?.tenantId;
-      const [configResult, aclResult, grantsResult] = await Promise.allSettled([
+      const [configResult, aclResult, grantsResult, governanceResult] = await Promise.allSettled([
         deleteConfig(PrincipalType.ROLE, name),
         deleteAclEntries({ principalType: PrincipalType.ROLE, principalId: name }),
         deleteGrantsForPrincipal(PrincipalType.ROLE, name, { tenantId }),
+        deletePrincipalGovernance?.(PrincipalType.ROLE, name),
       ]);
-      for (const result of [configResult, aclResult, grantsResult]) {
+      for (const result of [configResult, aclResult, grantsResult, governanceResult]) {
         if (result.status === 'rejected') {
           logger.error('[adminRoles] cascade cleanup failed for role:', name, result.reason);
         }

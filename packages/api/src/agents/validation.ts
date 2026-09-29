@@ -18,6 +18,7 @@ import type {
   AgentSubagentsConfig,
 } from 'librechat-data-provider';
 import type { Request, Response } from 'express';
+import { isAgentModelDelegated } from '~/governance/models';
 
 /**
  * Permissive Request alias used by {@link validateAgentModel}. Accepts either
@@ -970,7 +971,8 @@ export async function validateAgentModel(
     };
   }
 
-  const availableModels = modelsConfig[resolveModelCatalogKey(endpoint, modelsConfig)];
+  const catalogKey = resolveModelCatalogKey(endpoint, modelsConfig);
+  const availableModels = modelsConfig[catalogKey];
   if (!availableModels) {
     return {
       isValid: false,
@@ -982,7 +984,7 @@ export async function validateAgentModel(
 
   const validModel = !!availableModels.find((availableModel) => availableModel === model);
 
-  if (validModel) {
+  if (validModel || isAgentModelDelegated(modelsConfig, agent, catalogKey)) {
     return { isValid: true };
   }
 

@@ -9,6 +9,7 @@ export * from './credentials';
 export * from './artifacts';
 /* Admin */
 export * from './admin';
+export * from './governance';
 export * from './cdn';
 export * from './code';
 /* Auth */

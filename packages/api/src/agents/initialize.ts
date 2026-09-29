@@ -29,7 +29,7 @@ import type {
   TurnFileConsumers,
 } from 'librechat-data-provider';
 import type { GenericTool, LCToolRegistry, ToolMap, LCTool } from '@librechat/agents';
-import type { IMongoFile, FileOwnerScope } from '@librechat/data-schemas';
+import type { AppConfig, IMongoFile, FileOwnerScope } from '@librechat/data-schemas';
 import type { Request, Response as ServerResponse } from 'express';
 import type {
   TFileUpdate,
@@ -121,6 +121,7 @@ import { filterFilesByEndpointRuntimeConfig } from '~/files';
 import { hasActiveFileFieldPolicy } from '~/protection';
 import { PARTIAL_RESOLVED_CONVERSATION } from './guard';
 import { applyBackgroundToolCalls } from './background';
+import { capOutputTokens } from '~/governance/models';
 import { applyTurnDelivery } from './files/delivery';
 import { generateArtifactsPrompt } from '~/prompts';
 import { getProviderConfig } from '~/endpoints';
@@ -1034,6 +1035,12 @@ export interface InitializeAgentDbMethods extends EndpointDbMethods {
   /** Resolves a role by name for the tool role-permission grants. Optional: when
    *  absent the role half of the web-search gate is not applied. */
   getRoleByName?: CheckAccessParams['getRoleByName'];
+  /** The output-token cap an administrator set on this model (admin model policy), if any. */
+  getModelOutputCap?: (params: {
+    endpoint: string;
+    model: string;
+    appConfig?: AppConfig;
+  }) => Promise<number | undefined>;
 }
 
 /**
@@ -1308,6 +1315,14 @@ export async function initializeAgent(
     ...modelOptions,
     model: agent.model,
   };
+
+  const outputCap =
+    agent.model != null
+      ? await db?.getModelOutputCap?.({ endpoint: provider, model: agent.model, appConfig })
+      : undefined;
+  if (outputCap != null && outputCap > 0) {
+    capOutputTokens(finalModelOptions as Record<string, unknown>, outputCap, overrideProvider);
+  }
 
   const options: InitializeResultBase = await getOptions({
     runtime: {

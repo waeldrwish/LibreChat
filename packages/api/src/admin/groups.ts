@@ -82,6 +82,8 @@ export interface AdminGroupsDeps {
     principalType: PrincipalType;
     principalId: string | Types.ObjectId;
   }) => Promise<DeleteResult>;
+  /** Removes the group's model grants and usage limits (admin-panel governance). */
+  deletePrincipalGovernance?: (principalType: PrincipalType, principalId: string) => Promise<void>;
 }
 
 export function createAdminGroupsHandlers(deps: AdminGroupsDeps): {
@@ -107,6 +109,7 @@ export function createAdminGroupsHandlers(deps: AdminGroupsDeps): {
     findUsers,
     deleteConfig,
     deleteAclEntries,
+    deletePrincipalGovernance,
   } = deps;
 
   async function listGroupsHandler(req: ServerRequest, res: Response) {
@@ -320,6 +323,7 @@ export function createAdminGroupsHandlers(deps: AdminGroupsDeps): {
           principalType: PrincipalType.GROUP,
           principalId: new Types.ObjectId(id),
         }),
+        ...(deletePrincipalGovernance ? [deletePrincipalGovernance(PrincipalType.GROUP, id)] : []),
       ]);
       for (const result of cleanupResults) {
         if (result.status === 'rejected') {

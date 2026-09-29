@@ -205,6 +205,12 @@ async function initializeReferencedAgent(
     return null;
   }
 
+  if (agent.disabled === true) {
+    logger.warn(`[initializeReferencedAgent] Agent ${agentId} is disabled, skipping`);
+    deps.onAgentSkipped?.(agentId);
+    return null;
+  }
+
   const userId = params.req.user?.id;
   if (!userId) {
     logger.warn(`[initializeReferencedAgent] No authenticated user, skipping agent ${agentId}`);
