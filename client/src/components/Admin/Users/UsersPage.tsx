@@ -80,7 +80,7 @@ export default function UsersPage() {
           />
           <Dropdown
             variant="field"
-            className="w-40"
+            className="w-full sm:w-40"
             ariaLabel={localize('com_admin_field_status')}
             value={status}
             onChange={resetPage(setStatus)}
@@ -93,7 +93,7 @@ export default function UsersPage() {
           {roles.data && (
             <Dropdown
               variant="field"
-              className="w-44"
+              className="w-full sm:w-44"
               ariaLabel={localize('com_admin_field_role')}
               value={role}
               onChange={resetPage(setRole)}
@@ -106,7 +106,7 @@ export default function UsersPage() {
           {groups.data && groups.data.groups.length > 0 && (
             <Dropdown
               variant="field"
-              className="w-48"
+              className="w-full sm:w-48"
               ariaLabel={localize('com_admin_field_group')}
               value={groupId}
               onChange={resetPage(setGroupId)}

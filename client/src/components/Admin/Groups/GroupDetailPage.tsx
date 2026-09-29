@@ -13,7 +13,15 @@ import {
   useRemoveAdminGroupMemberMutation,
   useSetAdminGroupManagersMutation,
 } from '~/data-provider';
-import { PageHeader, Panel, QueryState, SectionTitle, useAdminNotify } from '../common/ui';
+import {
+  Panel,
+  LinkList,
+  PageHeader,
+  QueryState,
+  SectionTitle,
+  LinkListItem,
+  useAdminNotify,
+} from '../common/ui';
 import { ConfirmDialog, Pager, UserPicker } from '../common/controls';
 import AccessEditor from '../access/AccessEditor';
 import { GroupFormDialog } from './GroupsPage';
@@ -74,9 +82,12 @@ function MembersTab({ group, canEdit }: { group: TAdminGroupRecord; canEdit: boo
         >
           {(data) => (
             <>
-              <ul className="divide-y divide-border-light">
+              <LinkList className="divide-y divide-border-light">
                 {data.members.map((member) => (
-                  <li key={member.userId} className="flex items-center justify-between gap-3 py-2">
+                  <LinkListItem
+                    key={member.userId}
+                    className="flex items-center justify-between gap-3 py-2"
+                  >
                     <Link to={`../../users/${member.userId}`} relative="path" className="min-w-0">
                       <span className="block truncate text-sm text-text-primary hover:underline">
                         {member.name || member.email}
@@ -103,9 +114,9 @@ function MembersTab({ group, canEdit }: { group: TAdminGroupRecord; canEdit: boo
                         <UserMinus className="size-4" aria-hidden="true" />
                       </Button>
                     )}
-                  </li>
+                  </LinkListItem>
                 ))}
-              </ul>
+              </LinkList>
               <Pager
                 total={data.total}
                 limit={data.limit}

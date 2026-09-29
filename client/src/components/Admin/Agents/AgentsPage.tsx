@@ -95,7 +95,7 @@ export default function AgentsPage() {
           />
           <Dropdown
             variant="field"
-            className="w-40"
+            className="w-full sm:w-40"
             ariaLabel={localize('com_admin_field_status')}
             value={status}
             onChange={(value) => {

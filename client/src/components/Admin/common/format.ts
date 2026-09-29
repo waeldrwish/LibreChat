@@ -13,6 +13,7 @@ export function useAdminFormat() {
     const currency = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',
+      currencyDisplay: 'narrowSymbol',
       maximumFractionDigits: 2,
     });
     const date = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });

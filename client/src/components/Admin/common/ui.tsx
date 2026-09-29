@@ -148,6 +148,29 @@ export function StatusBadge({ active, label }: { active: boolean; label: string 
   );
 }
 
+type ListProps = { className?: string; children: ReactNode };
+
+/**
+ * A list whose rows hold links. The chat's global `li a` rule (`mobile.css`) paints any
+ * anchor inside an `<li>` bold, blue and underlined, overriding the theme roles, so rows
+ * carry the list semantics through ARIA roles instead of `<ul>`/`<li>`.
+ */
+export function LinkList({ className, children }: ListProps) {
+  return (
+    <div role="list" className={className}>
+      {children}
+    </div>
+  );
+}
+
+export function LinkListItem({ className, children }: ListProps) {
+  return (
+    <div role="listitem" className={className}>
+      {children}
+    </div>
+  );
+}
+
 /** Maps a failed admin call to a message in the panel's language. */
 export function useApiErrorMessage(): (error: unknown) => string {
   const localize = useLocalize();

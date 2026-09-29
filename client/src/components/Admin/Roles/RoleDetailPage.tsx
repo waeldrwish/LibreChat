@@ -12,8 +12,16 @@ import {
   useToggleAdminRoleGrantMutation,
   useUpdateAdminRolePermissionsMutation,
 } from '~/data-provider';
+import {
+  Panel,
+  LinkList,
+  PageHeader,
+  QueryState,
+  SectionTitle,
+  LinkListItem,
+  useAdminNotify,
+} from '../common/ui';
 import { CAPABILITY_GROUPS, PERMISSION_LABELS, PERMISSION_TYPE_LABELS } from './capabilities';
-import { PageHeader, Panel, QueryState, SectionTitle, useAdminNotify } from '../common/ui';
 import { ConfirmDialog, Pager } from '../common/controls';
 import AccessEditor from '../access/AccessEditor';
 import { Cap, useAdmin } from '../context';
@@ -162,9 +170,9 @@ function MembersTab({ role }: { role: TAdminRole }) {
       >
         {(data) => (
           <>
-            <ul className="divide-y divide-border-light">
+            <LinkList className="divide-y divide-border-light">
               {data.members.map((member) => (
-                <li key={member.userId} className="py-2">
+                <LinkListItem key={member.userId} className="py-2">
                   <Link
                     to={`../../users/${member.userId}`}
                     relative="path"
@@ -175,9 +183,9 @@ function MembersTab({ role }: { role: TAdminRole }) {
                   <span className="ms-2 text-xs text-text-secondary" dir="ltr">
                     {member.email}
                   </span>
-                </li>
+                </LinkListItem>
               ))}
-            </ul>
+            </LinkList>
             <Pager
               total={data.total}
               limit={data.limit}

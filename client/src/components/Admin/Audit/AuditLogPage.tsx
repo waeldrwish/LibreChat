@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Dropdown, Input, Label, Spinner } from '@librechat/client';
-import { ChevronDown, Download, ScrollText, ShieldCheck } from 'lucide-react';
+import { Button, Dropdown, Input, Spinner } from '@librechat/client';
+import { X, ChevronDown, Download, ScrollText, ShieldCheck } from 'lucide-react';
 import { AUDIT_CATEGORIES, AUDIT_OUTCOMES, dataService } from 'librechat-data-provider';
 import type {
   AuditOutcome,
@@ -10,10 +10,12 @@ import type {
 } from 'librechat-data-provider';
 import type { TranslationKeys } from '~/hooks';
 import { Empty, PageHeader, Panel, QueryState, useAdminNotify } from '../common/ui';
+import { LocalizedDateRangePicker } from '~/components/ui';
 import { useAdminAuditLogQuery } from '~/data-provider';
 import { useLocalize, useDebounce } from '~/hooks';
 import { useAdminFormat } from '../common/format';
 import { SearchBox } from '../common/controls';
+import { useAdmin } from '../context';
 import { cn } from '~/utils';
 
 const ALL = '__all__';
@@ -125,12 +127,12 @@ function EntryRow({ entry }: { entry: AdminAuditLogEntry }) {
 export default function AuditLogPage() {
   const localize = useLocalize();
   const notify = useAdminNotify();
+  const { locale } = useAdmin();
   const [search, setSearch] = useState('');
   const [actor, setActor] = useState('');
   const [category, setCategory] = useState(ALL);
   const [outcome, setOutcome] = useState(ALL);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [cursors, setCursors] = useState<number[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -142,8 +144,8 @@ export default function AuditLogPage() {
     actorQuery: debouncedActor || undefined,
     category: category === ALL ? undefined : (category as AuditCategory),
     outcome: outcome === ALL ? undefined : (outcome as AuditOutcome),
-    from: from ? new Date(`${from}T00:00:00`).toISOString() : undefined,
-    to: to ? new Date(`${to}T23:59:59.999`).toISOString() : undefined,
+    from: range?.start.toISOString(),
+    to: range?.end.toISOString(),
   };
   const cursor = cursors[cursors.length - 1];
   const log = useAdminAuditLogQuery({ ...filters, limit: PAGE_SIZE, cursor });
@@ -248,27 +250,34 @@ export default function AuditLogPage() {
               ...AUDIT_OUTCOMES.map((item) => ({ value: item, label: localize(outcomeKey(item)) })),
             ]}
           />
-          <div className="flex items-center gap-2">
-            <Label htmlFor="audit-from" className="shrink-0">
-              {localize('com_admin_filter_start')}
-            </Label>
-            <Input
-              id="audit-from"
-              type="date"
-              value={from}
-              onChange={(event) => resetPaging(setFrom)(event.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="audit-to" className="shrink-0">
-              {localize('com_admin_filter_end')}
-            </Label>
-            <Input
-              id="audit-to"
-              type="date"
-              value={to}
-              onChange={(event) => resetPaging(setTo)(event.target.value)}
-            />
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <LocalizedDateRangePicker
+                locale={locale}
+                startDate={range?.start}
+                endDate={range?.end}
+                futureDatesDisabled
+                placeholder={localize('com_admin_audit_any_date')}
+                labels={{
+                  apply: localize('com_admin_apply'),
+                  cancel: localize('com_admin_cancel'),
+                  startDate: localize('com_admin_filter_start'),
+                  endDate: localize('com_admin_filter_end'),
+                  invalidRange: localize('com_admin_filter_end_before_start'),
+                }}
+                onSelectDateRange={(start, end) => resetPaging(setRange)({ start, end })}
+              />
+            </div>
+            {range && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={localize('com_ui_clear')}
+                onClick={() => resetPaging(setRange)(null)}
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Button>
+            )}
           </div>
         </div>
         <QueryState

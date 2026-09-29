@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { Button, Spinner } from '@librechat/client';
 import { Menu, ArrowRight, ShieldAlert } from 'lucide-react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuthContext, useDocumentTitle, useLocalize } from '~/hooks';
+import { Empty, LinkList, LinkListItem } from './common/ui';
 import { AdminContextProvider, useAdmin } from './context';
-import { useDocumentTitle, useLocalize } from '~/hooks';
 import { useAdminSessionQuery } from '~/data-provider';
 import AdminLocale from './AdminLocale';
-import { Empty } from './common/ui';
 import { ADMIN_NAV } from './nav';
 import { cn } from '~/utils';
 
@@ -25,9 +25,9 @@ function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
             <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-wide text-text-secondary">
               {localize(section.labelKey)}
             </p>
-            <ul className="flex flex-col gap-0.5">
+            <LinkList className="flex flex-col gap-0.5">
               {items.map((item) => (
-                <li key={item.path}>
+                <LinkListItem key={item.path}>
                   <NavLink
                     to={item.path}
                     end={item.path === ''}
@@ -44,9 +44,9 @@ function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     <item.icon className="size-4 shrink-0" aria-hidden="true" />
                     <span>{localize(item.labelKey)}</span>
                   </NavLink>
-                </li>
+                </LinkListItem>
               ))}
-            </ul>
+            </LinkList>
           </div>
         );
       })}
@@ -140,7 +140,9 @@ function AdminDenied() {
  * presentation.
  */
 export default function AdminLayout() {
-  const session = useAdminSessionQuery();
+  /** A reload restores the session token asynchronously; asking before it lands would 401. */
+  const { isAuthenticated } = useAuthContext();
+  const session = useAdminSessionQuery(isAuthenticated);
 
   if (session.isLoading) {
     return (

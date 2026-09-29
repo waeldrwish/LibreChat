@@ -116,7 +116,7 @@ function Catalog({
           />
           <Dropdown
             variant="field"
-            className="w-48"
+            className="w-full sm:w-48"
             ariaLabel={localize('com_admin_field_provider')}
             value={endpoint}
             onChange={setEndpoint}

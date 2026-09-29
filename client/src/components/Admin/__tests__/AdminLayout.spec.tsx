@@ -16,6 +16,11 @@ let mockSession: { data?: TAdminSession; isLoading: boolean; error: unknown } = 
   error: null,
 };
 
+jest.mock('~/hooks/AuthContext', () => ({
+  ...jest.requireActual('~/hooks/AuthContext'),
+  useAuthContext: () => ({ isAuthenticated: true }),
+}));
+
 jest.mock('~/data-provider', () => ({
   useAdminSessionQuery: () => mockSession,
 }));
