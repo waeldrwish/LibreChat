@@ -37,6 +37,13 @@ jest.mock('@librechat/api', () => ({
   createMessageFilterPii: jest.fn(() => (_req, _res, next) => next()),
 }));
 
+jest.mock('~/server/middleware/governance', () => ({
+  chatUsageLimitGuard: (_req, _res, next) => next(),
+  apiUsageLimitGuard: (_req, _res, next) => next(),
+  disabledAgentGuard: (_req, _res, next) => next(),
+  apiDisabledAgentGuard: (_req, _res, next) => next(),
+}));
+
 jest.mock('~/server/middleware', () => ({
   uaParser: (_req, _res, next) => next(),
   checkBan: (_req, _res, next) => next(),

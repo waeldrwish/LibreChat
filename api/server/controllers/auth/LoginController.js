@@ -1,4 +1,5 @@
 const { logger } = require('@librechat/data-schemas');
+const { isAccountDisabled, ACCOUNT_DISABLED_RESPONSE } = require('@librechat/api');
 const { generate2FATempToken } = require('~/server/services/twoFactorService');
 const { setAuthTokens } = require('~/server/services/AuthService');
 
@@ -6,6 +7,10 @@ const loginController = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (isAccountDisabled(req.user)) {
+      return res.status(403).json(ACCOUNT_DISABLED_RESPONSE);
     }
 
     if (req.user.twoFactorEnabled) {

@@ -1,7 +1,8 @@
 const express = require('express');
-const { generateCheckAccess } = require('@librechat/api');
+const { agentAuditRules, createAuditTrail, generateCheckAccess } = require('@librechat/api');
 const { PermissionTypes, Permissions, PermissionBits } = require('librechat-data-provider');
 const { configMiddleware, canAccessAgentResource } = require('~/server/middleware');
+const { recordAdminAction } = require('~/server/services/AdminPanel');
 const v1 = require('~/server/controllers/agents/v1');
 const { getRoleByName } = require('~/models');
 const actions = require('./actions');
@@ -9,6 +10,7 @@ const tools = require('./tools');
 
 const router = express.Router();
 const avatar = express.Router();
+const agentAuditTrail = createAuditTrail(recordAdminAction, agentAuditRules);
 
 const checkAgentAccess = generateCheckAccess({
   permissionType: PermissionTypes.AGENTS,
@@ -141,6 +143,7 @@ router.post(
  */
 router.delete(
   '/:id',
+  agentAuditTrail,
   checkAgentCreate,
   canAccessAgentResource({
     requiredPermission: PermissionBits.DELETE,

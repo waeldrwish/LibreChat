@@ -386,6 +386,10 @@ jest.mock('@librechat/api', () => ({
   },
 }));
 
+jest.mock('~/server/services/Governance', () => ({
+  getModelOutputCap: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('~/server/controllers/ModelController', () => ({
   getModelsConfig: jest.fn().mockResolvedValue({}),
 }));

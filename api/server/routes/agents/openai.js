@@ -31,6 +31,7 @@ const {
   GetModelController,
 } = require('~/server/controllers/agents/openai');
 const { agentEventUserLimiter, configMiddleware } = require('~/server/middleware');
+const { apiUsageLimitGuard, apiDisabledAgentGuard } = require('~/server/middleware/governance');
 const {
   enqueueAgentTrigger,
   getAgentTriggerDeliveryStatus,
@@ -120,7 +121,13 @@ router.get('/events/:id', eventHandlers.getEvent);
  * Response (non-streaming):
  * - Standard OpenAI chat.completion format
  */
-router.post('/chat/completions', checkAgentPermission, OpenAIChatCompletionController);
+router.post(
+  '/chat/completions',
+  checkAgentPermission,
+  apiDisabledAgentGuard,
+  apiUsageLimitGuard,
+  OpenAIChatCompletionController,
+);
 
 /**
  * @route GET /v1/models

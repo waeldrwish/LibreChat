@@ -13,6 +13,7 @@ const { getMCPServerTools } = require('~/server/services/Config');
 const { getAccessibleMcpServerNames, getAccessibleMCPServers } = require('~/server/services/MCP');
 const { isFatalAgentInitializationError } = require('~/server/services/ToolService');
 const { getSkillDbMethods, canAuthorSkillFiles } = require('./skillDeps');
+const { getModelOutputCap } = require('~/server/services/Governance');
 const db = require('~/models');
 
 const loadAddedAgent = (params) =>
@@ -220,6 +221,7 @@ const processAddedConvo = async ({
         listAlwaysApplySkills: skillDbMethods.listAlwaysApplySkills,
         getSkillByName: skillDbMethods.getSkillByName,
         getRoleByName: db.getRoleByName,
+        getModelOutputCap,
       },
     );
 

@@ -6,6 +6,7 @@ const { handleAbort, validateModel, buildEndpointOption } = require('~/server/mi
 const validateConvoAccess = require('~/server/middleware/validate/convoAccess');
 const guardSubagentThreadTurn = require('~/server/middleware/validate/subagentThreadTurn');
 const validateAssistant = require('~/server/middleware/assistants/validate');
+const { chatUsageLimitGuard } = require('~/server/middleware/governance');
 const chatController = require('~/server/controllers/assistants/chatV2');
 const { getFiles } = require('~/models');
 
@@ -29,6 +30,7 @@ const filterMessageContent = createMessageFilterPii({
 router.post(
   '/',
   filterMessageContent,
+  chatUsageLimitGuard,
   validateModel,
   buildEndpointOption,
   validateAssistant,

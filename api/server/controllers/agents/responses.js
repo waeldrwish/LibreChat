@@ -115,6 +115,7 @@ const {
 const { createProvisionFilesCallback } = require('~/server/services/Files/provisionCallback');
 const { checkSessionsAlive, loadCodeApiKey } = require('~/server/services/Files/provision');
 const { getModelsConfig } = require('~/server/controllers/ModelController');
+const { getModelOutputCap } = require('~/server/services/Governance');
 const { filterFilesByAgentAccess } = require('~/server/services/Files/permissions');
 const { resolveConfigServers, getAccessibleMcpServerNames } = require('~/server/services/MCP');
 const { resolveConversationTitle } = require('~/server/services/Endpoints/titlePolicy');
@@ -760,6 +761,7 @@ const executeResponse = async (envelope, { req, res }) => {
       };
 
       const dbMethods = {
+        getModelOutputCap,
         getConvoFiles: db.getConvoFiles,
         getFiles: db.getFiles,
         filterFilesByAgentAccess: filterFilesByRemoteAgentAccess,

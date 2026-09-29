@@ -3,6 +3,8 @@ const passport = require('passport');
 const { logger } = require('@librechat/data-schemas');
 const {
   isEnabled,
+  isAccountDisabled,
+  ACCOUNT_DISABLED_RESPONSE,
   tenantContextMiddleware,
   getAuthFailureReasonCategory,
   buildSafeAuthLogContext,
@@ -181,6 +183,9 @@ const requireJwtAuth = (req, res, next) => {
         }
         logAuthenticationFailure({ strategy, info, status: 401, err });
         return res.status(401).json({ message: 'Unauthorized' });
+      }
+      if (isAccountDisabled(user)) {
+        return res.status(401).json(ACCOUNT_DISABLED_RESPONSE);
       }
       req.user = user;
       req.authStrategy = strategy;

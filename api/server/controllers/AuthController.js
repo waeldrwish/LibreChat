@@ -5,6 +5,8 @@ const { logger, runAsSystem, tenantStorage } = require('@librechat/data-schemas'
 const {
   math,
   isEnabled,
+  isAccountDisabled,
+  ACCOUNT_DISABLED_RESPONSE,
   createAuthIdentityContext,
   createOpenIDRefreshOwnershipError,
   isOpenIDRefreshOwnershipError,
@@ -378,6 +380,9 @@ const refreshController = async (req, res) => {
               if (!user || !isReusableOpenIDSessionIdentity(reuseSessionTokens, user)) {
                 return undefined;
               }
+              if (isAccountDisabled(user)) {
+                return res.status(403).send(ACCOUNT_DISABLED_RESPONSE);
+              }
               return sendAuthorized(() => {
                 const cloudFrontCookiesSet = setCloudFrontAuthCookies(req, res, user);
                 logger.debug('[refreshController] OpenID session token reused', {
@@ -416,6 +421,9 @@ const refreshController = async (req, res) => {
       );
       if (!refreshUser) {
         return res.status(403).send('Invalid OpenID refresh token');
+      }
+      if (isAccountDisabled(refreshUser)) {
+        return res.status(403).send(ACCOUNT_DISABLED_RESPONSE);
       }
 
       return await runInUserTenant(refreshUser, async () => {
@@ -550,6 +558,9 @@ const refreshController = async (req, res) => {
             if (!bridgeUser) {
               return res.status(403).send('Invalid OpenID refresh token');
             }
+            if (isAccountDisabled(bridgeUser)) {
+              return res.status(403).send(ACCOUNT_DISABLED_RESPONSE);
+            }
 
             const bridgeResponse = await runInUserTenant(bridgeUser, async () => {
               const bridgedRefreshToken = await getRefreshTokenBridge({
@@ -622,6 +633,9 @@ const refreshController = async (req, res) => {
     const user = await getUserById(payload.id, AUTH_REFRESH_USER_PROJECTION);
     if (!user) {
       return res.status(401).redirect('/login');
+    }
+    if (isAccountDisabled(user)) {
+      return res.status(403).send(ACCOUNT_DISABLED_RESPONSE);
     }
 
     const userId = payload.id;

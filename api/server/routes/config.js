@@ -21,6 +21,7 @@ const { hasCapability, hasConfigCapability } = require('~/server/middleware/role
 const { getLdapConfig } = require('~/server/services/Config/ldap');
 const { getRumConfig } = require('~/server/services/Config/rum');
 const { getAppConfig } = require('~/server/services/Config/app');
+const { governance } = require('~/server/services/Governance');
 
 const router = express.Router();
 const emailLoginEnabled =
@@ -251,6 +252,12 @@ router.get('/', async function (req, res) {
     }
 
     const appConfig = await getAppConfig(getAppConfigOptionsFromUser(req.user));
+    const allowedModelSpecs = await governance
+      .filterModelSpecs({ user: req.user, appConfig, modelSpecs: appConfig?.modelSpecs })
+      .catch((err) => {
+        logger.error('[config] Failed to apply model access to model specs', err);
+        return appConfig?.modelSpecs;
+      });
     const codeEnvironmentDecisionVersion = resolveCodeEnvironmentDecisionVersion(
       process.env.CODE_ENVIRONMENT_DECISION_VERSION,
     );
@@ -300,7 +307,7 @@ router.get('/', async function (req, res) {
         endpoint: EModelEndpoint.agents,
       }),
       turnstile: appConfig?.turnstileConfig,
-      modelSpecs: sanitizeModelSpecs(excludeHiddenModelSpecs(appConfig?.modelSpecs)),
+      modelSpecs: sanitizeModelSpecs(excludeHiddenModelSpecs(allowedModelSpecs)),
       balance: balanceConfig,
       bundlerURL: process.env.SANDPACK_BUNDLER_URL,
       staticBundlerURL: process.env.SANDPACK_STATIC_BUNDLER_URL,

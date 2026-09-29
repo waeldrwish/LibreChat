@@ -68,6 +68,8 @@ jest.mock('@librechat/api', () => {
     normalizeContextValue(req.headers?.['x-correlation-id']);
   return {
     isEnabled: jest.fn(() => false),
+    isAccountDisabled: actualApi.isAccountDisabled,
+    ACCOUNT_DISABLED_RESPONSE: actualApi.ACCOUNT_DISABLED_RESPONSE,
     recordRumProxyRequest: jest.fn(),
     getAuthFailureReasonCategory: actualApi.getAuthFailureReasonCategory,
     buildSafeAuthLogContext: actualApi.buildSafeAuthLogContext,
@@ -183,6 +185,19 @@ describe('requireJwtAuth tenant context chaining', () => {
   it('sets ALS tenant context after passport auth succeeds', async () => {
     const tenantId = await runAuth({ tenantId: 'tenant-abc', role: 'user' });
     expect(tenantId).toBe('tenant-abc');
+  });
+
+  it('rejects a disabled account with a code the client can explain', () => {
+    const req = mockReq({ id: 'user-disabled', role: 'user', disabled: true });
+    const res = mockRes();
+    const next = jest.fn();
+
+    requireJwtAuth(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(req.user).toBeUndefined();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'account_disabled' }));
   });
 
   it('refreshes CloudFront auth cookies after passport auth succeeds', () => {

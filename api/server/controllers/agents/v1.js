@@ -1733,8 +1733,8 @@ const getListAgentsHandler = async (req, res) => {
      * only editable agents, so it needs no second lookup to know which ones those are.
      */
     const needsEditableLookup = !hasEditBit(requiredPermission);
-    // Base filter
-    const filter = {};
+    /** Disabled agents stay visible to their editors (to re-enable or fix them) only. */
+    const filter = hasEditBit(requiredPermission) ? {} : { disabled: { $ne: true } };
 
     // Handle category filter - only apply if category is defined
     if (category !== undefined && category.trim() !== '') {

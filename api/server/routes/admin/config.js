@@ -1,5 +1,6 @@
 const express = require('express');
-const { createAdminConfigHandlers } = require('@librechat/api');
+const { createAuditTrail, configAuditRules, createAdminConfigHandlers } = require('@librechat/api');
+const { recordAdminAction } = require('~/server/services/AdminPanel');
 const { SystemCapabilities } = require('@librechat/data-schemas');
 const {
   hasCapability,
@@ -33,7 +34,11 @@ const handlers = createAdminConfigHandlers({
   invalidateConfigCaches,
 });
 
-router.use(requireJwtAuth, requireAdminAccess);
+router.use(
+  requireJwtAuth,
+  requireAdminAccess,
+  createAuditTrail(recordAdminAction, configAuditRules),
+);
 
 router.get('/', handlers.listConfigs);
 router.get('/base', handlers.getBaseConfig);

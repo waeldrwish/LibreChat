@@ -1,7 +1,9 @@
 const express = require('express');
-const { createAdminRolesHandlers } = require('@librechat/api');
+const { createAuditTrail, roleAuditRules, createAdminRolesHandlers } = require('@librechat/api');
 const { SystemCapabilities } = require('@librechat/data-schemas');
 const { requireCapability } = require('~/server/middleware/roles/capabilities');
+const { recordAdminAction } = require('~/server/services/AdminPanel');
+const { governance } = require('~/server/services/Governance');
 const { requireJwtAuth } = require('~/server/middleware');
 const db = require('~/models');
 
@@ -31,9 +33,13 @@ const handlers = createAdminRolesHandlers({
   deleteGrantsForPrincipal: db.deleteGrantsForPrincipal,
   recordAuditEntry: db.recordAuditEntry,
   invalidatePromptGroupAccessContext: db.invalidatePromptGroupAccessContext,
+  deletePrincipalGovernance: async (principalType, principalId) => {
+    await db.deletePrincipalGovernance(principalType, principalId);
+    governance.invalidate();
+  },
 });
 
-router.use(requireJwtAuth, requireAdminAccess);
+router.use(requireJwtAuth, requireAdminAccess, createAuditTrail(recordAdminAction, roleAuditRules));
 
 router.get('/', requireReadRoles, handlers.listRoles);
 router.post('/', requireManageRoles, handlers.createRole);

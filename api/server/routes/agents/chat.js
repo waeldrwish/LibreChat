@@ -20,6 +20,7 @@ const {
 } = require('~/server/middleware');
 const { initializeClient } = require('~/server/services/Endpoints/agents');
 const guardSubagentThreadTurn = require('~/server/middleware/validate/subagentThreadTurn');
+const { disabledAgentGuard } = require('~/server/middleware/governance');
 const AgentController = require('~/server/controllers/agents/request');
 const ResumeController = require('~/server/controllers/agents/resume');
 const addTitle = require('~/server/services/Endpoints/agents/title');
@@ -82,6 +83,7 @@ router.use(
 router.use(moderateText);
 router.use(checkAgentAccess);
 router.use(checkAgentResourceAccess);
+router.use(disabledAgentGuard);
 router.use(validateConvoAccess);
 router.use(guardSubagentThreadTurn);
 router.use(buildEndpointOption);

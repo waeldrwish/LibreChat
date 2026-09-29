@@ -1,7 +1,14 @@
 const express = require('express');
-const { createAdminGroupsHandlers } = require('@librechat/api');
+const {
+  createAuditTrail,
+  groupAuditRules,
+  createAdminGroupsHandlers,
+  createAdminTeamHandlers,
+} = require('@librechat/api');
 const { SystemCapabilities } = require('@librechat/data-schemas');
 const { requireCapability } = require('~/server/middleware/roles/capabilities');
+const { recordAdminAction } = require('~/server/services/AdminPanel');
+const { governance } = require('~/server/services/Governance');
 const { requireJwtAuth } = require('~/server/middleware');
 const db = require('~/models');
 
@@ -24,15 +31,30 @@ const handlers = createAdminGroupsHandlers({
   findUsers: db.findUsers,
   deleteConfig: db.deleteConfig,
   deleteAclEntries: db.deleteAclEntries,
+  deletePrincipalGovernance: async (principalType, principalId) => {
+    await db.deletePrincipalGovernance(principalType, principalId);
+    governance.invalidate();
+  },
 });
 
-router.use(requireJwtAuth, requireAdminAccess);
+const teams = createAdminTeamHandlers({
+  setGroupManagers: db.setGroupManagers,
+  findAdminUserById: db.findAdminUserById,
+  recordAdminAction,
+});
+
+router.use(
+  requireJwtAuth,
+  requireAdminAccess,
+  createAuditTrail(recordAdminAction, groupAuditRules),
+);
 
 router.get('/', requireReadGroups, handlers.listGroups);
 router.post('/', requireManageGroups, handlers.createGroup);
 router.get('/:id', requireReadGroups, handlers.getGroup);
 router.patch('/:id', requireManageGroups, handlers.updateGroup);
 router.delete('/:id', requireManageGroups, handlers.deleteGroup);
+router.put('/:id/managers', requireManageGroups, teams.setManagers);
 router.get('/:id/members', requireReadGroups, handlers.getGroupMembers);
 router.post('/:id/members', requireManageGroups, handlers.addGroupMember);
 router.delete('/:id/members/:userId', requireManageGroups, handlers.removeGroupMember);

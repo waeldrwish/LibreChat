@@ -490,6 +490,10 @@ jest.mock('~/server/services/PermissionService', () => ({
   checkPermission: jest.fn().mockResolvedValue(true),
 }));
 
+jest.mock('~/server/services/Governance', () => ({
+  getModelOutputCap: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('~/server/controllers/ModelController', () => ({
   getModelsConfig: jest.fn().mockResolvedValue({}),
 }));

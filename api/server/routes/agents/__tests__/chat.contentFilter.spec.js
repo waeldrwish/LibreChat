@@ -23,6 +23,13 @@ jest.mock('@librechat/api', () => ({
   getSafeErrorMetadata: mockGetSafeErrorMetadata,
 }));
 
+jest.mock('~/server/middleware/governance', () => ({
+  chatUsageLimitGuard: (_req, _res, next) => next(),
+  apiUsageLimitGuard: (_req, _res, next) => next(),
+  disabledAgentGuard: (_req, _res, next) => next(),
+  apiDisabledAgentGuard: (_req, _res, next) => next(),
+}));
+
 jest.mock('~/server/middleware', () => ({
   moderateText: (_req, _res, next) => next(),
   validateConvoAccess: (_req, _res, next) => next(),

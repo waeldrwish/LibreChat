@@ -52,6 +52,10 @@ jest.mock('./skillDeps', () => ({
   getSkillDbMethods: () => mockGetSkillDbMethods(),
 }));
 
+jest.mock('~/server/services/Governance', () => ({
+  getModelOutputCap: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('~/models', () => ({
   getAgent: (...args) => mockGetAgent(...args),
   getSkillByName: jest.fn(),

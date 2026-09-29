@@ -98,6 +98,7 @@ const {
 const { createProvisionFilesCallback } = require('~/server/services/Files/provisionCallback');
 const { checkSessionsAlive, loadCodeApiKey } = require('~/server/services/Files/provision');
 const { getModelsConfig } = require('~/server/controllers/ModelController');
+const { getModelOutputCap } = require('~/server/services/Governance');
 const { filterFilesByAgentAccess } = require('~/server/services/Files/permissions');
 const { resolveConfigServers } = require('~/server/services/MCP');
 const { getMCPManager } = require('~/config');
@@ -504,6 +505,7 @@ const executeOpenAIChatCompletion = async (envelope, { req, res }) => {
       const skillDbMethods = getSkillDbMethods();
 
       const dbMethods = {
+        getModelOutputCap,
         getConvoFiles: db.getConvoFiles,
         getFiles: db.getFiles,
         filterFilesByAgentAccess: filterFilesByRemoteAgentAccess,

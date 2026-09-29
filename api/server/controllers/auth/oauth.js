@@ -1,7 +1,8 @@
-const { CacheKeys } = require('librechat-data-provider');
+const { CacheKeys, ErrorTypes } = require('librechat-data-provider');
 const { logger, DEFAULT_SESSION_EXPIRY } = require('@librechat/data-schemas');
 const {
   isEnabled,
+  isAccountDisabled,
   getAdminPanelUrl,
   isAdminPanelRedirect,
   generateAdminExchangeCode,
@@ -11,6 +12,7 @@ const { setAuthTokens } = require('~/server/services/AuthService');
 const { sendOpenIDAuthResponse } = require('~/server/services/OpenIDRefreshRecovery');
 const getLogStores = require('~/cache/getLogStores');
 const { checkBan } = require('~/server/middleware');
+const { redirectOAuthFailure } = require('~/server/middleware/oauthNavigation');
 const { generateToken } = require('~/models');
 
 const domains = {
@@ -35,6 +37,10 @@ function createOAuthHandler(redirectUri = domains.client) {
       await checkBan(req, res);
       if (req.banned) {
         return;
+      }
+
+      if (isAccountDisabled(req.user)) {
+        return redirectOAuthFailure(res, ErrorTypes.ACCOUNT_DISABLED);
       }
 
       /** Check if this is an admin panel redirect (cross-origin or same-origin subpath) */

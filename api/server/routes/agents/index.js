@@ -35,6 +35,7 @@ const {
   configMiddleware,
   messageUserLimiter,
 } = require('~/server/middleware');
+const { chatUsageLimitGuard } = require('~/server/middleware/governance');
 const SteerController = require('~/server/controllers/agents/steer');
 const {
   AgentQueuedTurnEnqueueController,
@@ -1169,6 +1170,7 @@ if (useMessageUserLimiter) {
   );
 }
 
+chatRouter.use(chatUsageLimitGuard);
 chatRouter.use('/', chat);
 router.use('/chat', chatRouter);
 

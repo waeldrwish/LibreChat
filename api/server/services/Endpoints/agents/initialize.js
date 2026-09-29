@@ -88,6 +88,7 @@ const {
 } = require('~/server/services/Files/provision');
 const { createProvisionFilesCallback } = require('~/server/services/Files/provisionCallback');
 const { getModelsConfig } = require('~/server/controllers/ModelController');
+const { getModelOutputCap } = require('~/server/services/Governance');
 const { checkPermission, findAccessibleResources } = require('~/server/services/PermissionService');
 const AgentClient = require('~/server/controllers/agents/client');
 const { processAddedConvo } = require('./addedConvo');
@@ -760,6 +761,7 @@ const initializeClientWithProvider = async ({
       loadCodeApiKey,
       updateFile: db.updateFile,
       getRoleByName: db.getRoleByName,
+      getModelOutputCap,
     },
   );
 
@@ -852,6 +854,7 @@ const initializeClientWithProvider = async ({
         loadCodeApiKey,
         updateFile: db.updateFile,
         getRoleByName: db.getRoleByName,
+        getModelOutputCap,
       },
       // The callback fires during BFS, before the helper prunes agents
       // whose edges end up filtered. Don't populate `agentConfigs` here —
@@ -1337,6 +1340,7 @@ const initializeClientWithProvider = async ({
           loadCodeApiKey,
           updateFile: db.updateFile,
           getRoleByName: db.getRoleByName,
+          getModelOutputCap,
         },
       ),
       context.signal,

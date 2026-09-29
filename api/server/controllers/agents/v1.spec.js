@@ -3448,6 +3448,24 @@ describe('Agent Controllers - Mass Assignment Protection', () => {
       expect(response.data[0].name).toBe('Agent A1');
     });
 
+    test('hides an administrator-disabled agent from viewers but not from editors', async () => {
+      await Agent.updateOne({ _id: agentA2._id }, { $set: { disabled: true } });
+      mockReq.user.id = userB.toString();
+      findAccessibleResources.mockResolvedValue([agentA1._id, agentA2._id]);
+      findPubliclyAccessibleResources.mockResolvedValue([]);
+
+      await getListAgentsHandler(mockReq, mockRes);
+      const viewerIds = mockRes.json.mock.calls[0][0].data.map((agent) => agent.id);
+      expect(viewerIds).toEqual([agentA1.id]);
+
+      mockRes.json.mockClear();
+      mockReq.query = { requiredPermission: '2' };
+      await getListAgentsHandler(mockReq, mockRes);
+      const editorIds = mockRes.json.mock.calls[0][0].data.map((agent) => agent.id);
+      expect(editorIds).toEqual(expect.arrayContaining([agentA1.id, agentA2.id]));
+      mockReq.query = {};
+    });
+
     test('should return owner_contact for list agents missing support_contact', async () => {
       const owner = await createOwner({
         _id: userA,
@@ -4254,7 +4272,10 @@ describe('Agent Controllers - Mass Assignment Protection', () => {
         );
         /** The user-facing list query keeps the request filter, not the refresh scope. */
         expect(listSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ includeSkillConfig: true, otherParams: {} }),
+          expect.objectContaining({
+            includeSkillConfig: true,
+            otherParams: { disabled: { $ne: true } },
+          }),
         );
 
         expect(refreshS3Url).not.toHaveBeenCalled();

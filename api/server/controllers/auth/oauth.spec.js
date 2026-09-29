@@ -12,6 +12,7 @@ const mockLogger = { info: jest.fn(), error: jest.fn() };
 
 jest.mock('librechat-data-provider', () => ({
   CacheKeys: { ADMIN_OAUTH_EXCHANGE: 'admin-oauth-exchange' },
+  ErrorTypes: { ACCOUNT_DISABLED: 'account_disabled' },
 }));
 
 jest.mock('@librechat/data-schemas', () => ({
@@ -21,6 +22,9 @@ jest.mock('@librechat/data-schemas', () => ({
 
 jest.mock('@librechat/api', () => ({
   isEnabled: (...args) => mockIsEnabled(...args),
+  isAccountDisabled: (user) => user?.disabled === true,
+  redirectToAuthFailure: (res, { clientDomain, authFailedError }) =>
+    res.redirect(`${clientDomain}/login?redirect=false&error=${authFailedError}`),
   getAdminPanelUrl: (...args) => mockGetAdminPanelUrl(...args),
   isAdminPanelRedirect: (...args) => mockIsAdminPanelRedirect(...args),
   generateAdminExchangeCode: (...args) => mockGenerateAdminExchangeCode(...args),
@@ -100,6 +104,21 @@ describe('createOAuthHandler', () => {
 
   afterAll(() => {
     process.env = ORIGINAL_ENV;
+  });
+
+  it('sends a disabled account back to the login page without issuing tokens', async () => {
+    const handler = createOAuthHandler('http://admin.example.com/auth/openid/callback');
+    const req = buildReq({ user: { ...buildReq().user, disabled: true } });
+    const res = buildRes();
+
+    await handler(req, res, jest.fn());
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      'http://localhost:3080/login?redirect=false&error=account_disabled',
+    );
+    expect(mockGenerateToken).not.toHaveBeenCalled();
+    expect(mockGenerateAdminExchangeCode).not.toHaveBeenCalled();
+    expect(mockSetAuthTokens).not.toHaveBeenCalled();
   });
 
   it('omits refresh token from admin exchange when OPENID_REUSE_TOKENS is disabled', async () => {

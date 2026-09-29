@@ -6,7 +6,13 @@ const {
   ResourceType,
   PermissionBits,
 } = require('librechat-data-provider');
-const { createAgentAdminPermissionAccess, isAgentPermissionsAdmin } = require('@librechat/api');
+const {
+  createAuditTrail,
+  permissionAuditRules,
+  isAgentPermissionsAdmin,
+  createAgentAdminPermissionAccess,
+} = require('@librechat/api');
+const { recordAdminAction } = require('~/server/services/AdminPanel');
 const {
   getUserEffectivePermissions,
   getAllEffectivePermissions,
@@ -25,6 +31,9 @@ const db = require('~/models');
 const { findMCPServerByObjectId, getSkillById } = db;
 
 const router = express.Router();
+
+/** Every change to who can access a resource (agents included) lands in the audit log. */
+const permissionAuditTrail = createAuditTrail(recordAdminAction, permissionAuditRules);
 
 // Apply common middleware
 router.use(requireJwtAuth);
@@ -194,6 +203,7 @@ router.get(
  */
 router.put(
   '/:resourceType/:resourceId',
+  permissionAuditTrail,
   checkResourcePermissionAccess(PermissionBits.SHARE),
   checkShareAccessUnlessAgentAdmin,
   checkSharePublicAccess,
