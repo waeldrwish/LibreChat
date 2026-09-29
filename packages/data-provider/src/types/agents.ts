@@ -1002,6 +1002,8 @@ export type Agent = {
   edges?: GraphEdge[];
   end_after_tools?: boolean;
   hide_sequential_outputs?: boolean;
+  /** Set by an administrator: a disabled agent cannot run and is hidden from its viewers. */
+  disabled?: boolean;
   /** Per-agent opt-in for stateful code sessions (requires the app-level capability). */
   stateful_code_sessions?: boolean;
   /** Stateful workspace sharing scope. Defaults to one workspace per user. */

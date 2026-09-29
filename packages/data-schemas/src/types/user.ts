@@ -74,6 +74,9 @@ export interface IUser extends Document {
   updatedAt?: Date;
   /** Field for external source identification (for consistency with TPrincipal schema) */
   idOnTheSource?: string;
+  /** Set by an administrator: a disabled account can neither sign in nor call the API. */
+  disabled?: boolean;
+  disabledAt?: Date;
   tenantId?: string;
   federatedTokens?: OIDCTokens;
   openidTokens?: OIDCTokens;

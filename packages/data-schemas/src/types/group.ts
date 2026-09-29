@@ -9,6 +9,8 @@ export interface IGroup extends Document {
   avatar?: string;
   /** Array of member IDs (stores idOnTheSource values, not ObjectIds) */
   memberIds?: string[];
+  /** User ids of the managers who oversee this group's members in the admin panel. */
+  managerIds?: string[];
   source: 'local' | 'entra';
   /** External ID (e.g., Entra ID) - required for non-local sources */
   idOnTheSource?: string;

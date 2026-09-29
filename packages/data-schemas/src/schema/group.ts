@@ -27,6 +27,11 @@ const groupSchema: Schema<IGroup> = new Schema<IGroup>(
         required: false,
       },
     ],
+    /** User ids of the managers who oversee this group's members in the admin panel. */
+    managerIds: {
+      type: [String],
+      default: undefined,
+    },
     source: {
       type: String,
       enum: ['local', 'entra'],
@@ -57,5 +62,6 @@ groupSchema.index(
   },
 );
 groupSchema.index({ memberIds: 1, tenantId: 1 });
+groupSchema.index({ managerIds: 1, tenantId: 1 }, { sparse: true });
 
 export default groupSchema;

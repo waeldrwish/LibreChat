@@ -70,6 +70,8 @@ export interface AppConfig {
   messageFilter?: TCustomConfig['messageFilter'];
   /** Langfuse tracing configuration */
   langfuse?: TCustomConfig['langfuse'];
+  /** Admin-panel policies (model access, usage limits); resolve with `resolveGovernanceConfig` */
+  governance?: TCustomConfig['governance'];
   /** Skill sync configuration */
   skillSync?: SkillSyncConfig;
   /** File storage strategy ('local', 's3', 'firebase', 'azure_blob', 'cloudfront') */

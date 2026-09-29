@@ -46,6 +46,16 @@ export const SystemCapabilities = {
    * would defeat the forensic guarantee.
    */
   READ_AUDIT_LOG: 'read:audit_log',
+  /** Views the model catalog, model policies and providers. */
+  READ_MODELS: 'read:models',
+  /** Creates, edits and deletes model policies and managed providers. */
+  MANAGE_MODELS: 'manage:models',
+  /** Sets usage limits (tokens/messages) for any user, group or role. */
+  MANAGE_LIMITS: 'manage:limits',
+  /** Views the members and usage of the groups the holder manages. */
+  READ_TEAM: 'read:team',
+  /** Enables/disables members and sets member limits within the groups the holder manages. */
+  MANAGE_TEAM: 'manage:team',
 } as const;
 
 /** Base capabilities derived from the SystemCapabilities constant. */
@@ -96,6 +106,8 @@ export const CapabilityImplications: Partial<Record<BaseSystemCapability, BaseSy
     [SystemCapabilities.MANAGE_SKILLS]: [SystemCapabilities.READ_SKILLS],
     [SystemCapabilities.MANAGE_SHARED_LINKS]: [SystemCapabilities.READ_SHARED_LINKS],
     [SystemCapabilities.MANAGE_ASSISTANTS]: [SystemCapabilities.READ_ASSISTANTS],
+    [SystemCapabilities.MANAGE_MODELS]: [SystemCapabilities.READ_MODELS],
+    [SystemCapabilities.MANAGE_TEAM]: [SystemCapabilities.READ_TEAM],
   };
 
 // ---------------------------------------------------------------------------
@@ -261,11 +273,22 @@ export const CAPABILITY_CATEGORIES: CapabilityCategory[] = [
     ],
   },
   {
+    key: 'models',
+    labelKey: 'com_cap_cat_models',
+    capabilities: [SystemCapabilities.MANAGE_MODELS, SystemCapabilities.READ_MODELS],
+  },
+  {
+    key: 'team',
+    labelKey: 'com_cap_cat_team',
+    capabilities: [SystemCapabilities.MANAGE_TEAM, SystemCapabilities.READ_TEAM],
+  },
+  {
     key: 'system',
     labelKey: 'com_cap_cat_system',
     capabilities: [
       SystemCapabilities.ACCESS_ADMIN,
       SystemCapabilities.READ_USAGE,
+      SystemCapabilities.MANAGE_LIMITS,
       SystemCapabilities.READ_INSIGHTS,
       SystemCapabilities.READ_AUDIT_LOG,
     ],

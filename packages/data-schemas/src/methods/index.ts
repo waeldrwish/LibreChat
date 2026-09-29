@@ -182,6 +182,19 @@ import {
 } from './mcpAuthority';
 /* Insights */
 import { createInsightsMethods, type InsightsMethods } from './insights';
+/* Governance (admin panel) */
+import { createGovernanceMethods, type GovernanceMethods } from './governance';
+import { createDirectoryMethods, type DirectoryMethods } from './directory';
+import { createUsageMethods, type UsageMethods } from './usage';
+export type { UsageWindow, UserUsageSnapshot } from './usage';
+export type {
+  GroupSummary,
+  AgentAccessRecord,
+  AdminUserFilter,
+  AdminUserRecord,
+  AdminAgentFilter,
+  AdminAgentRecord,
+} from './directory';
 
 export {
   runAfterTransaction,
@@ -264,7 +277,10 @@ export type AllMethods = UserMethods &
   AgentMethods &
   ConfigMethods &
   MCPAuthorityMethods &
-  InsightsMethods;
+  InsightsMethods &
+  GovernanceMethods &
+  DirectoryMethods &
+  UsageMethods;
 
 /** Dependencies injected from the api layer into createMethods */
 export interface CreateMethodsDeps {
@@ -499,6 +515,10 @@ export function createMethods(
     ...createMCPAuthorityMethods(mongoose),
     /* Insights */
     ...createInsightsMethods(mongoose),
+    /* Governance (admin panel) */
+    ...createGovernanceMethods(mongoose),
+    ...createDirectoryMethods(mongoose),
+    ...createUsageMethods(mongoose),
   };
 }
 
@@ -581,6 +601,9 @@ export type {
   MCPAuthorityConfigSourceDocument,
   MCPAuthorityCredentialSourceDocument,
   InsightsMethods,
+  GovernanceMethods,
+  DirectoryMethods,
+  UsageMethods,
 };
 
 export { recordAgentEventActorReceiptMetric, setAgentEventActorReceiptMetricObserver };

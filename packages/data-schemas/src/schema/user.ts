@@ -195,6 +195,13 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       sparse: true,
     },
+    /** Set by an administrator: a disabled account can neither sign in nor call the API. */
+    disabled: {
+      type: Boolean,
+    },
+    disabledAt: {
+      type: Date,
+    },
     tenantId: {
       type: String,
       index: true,

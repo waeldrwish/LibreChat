@@ -25,6 +25,9 @@ export * from './mcp';
 /* RBAC */
 export * from './permissions';
 export * from './roles';
+/* governance (admin panel policies) */
+export * from './governance';
+export * from './types/admin';
 /* types (exports schemas from `./types` as they contain needed in other defs) */
 export * from './types';
 export * from './types/agents';

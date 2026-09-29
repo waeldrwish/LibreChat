@@ -63,5 +63,7 @@ export interface IAgent extends Omit<Document, 'model'> {
   subagents?: AgentSubagentsConfig;
   /** Memory partition: 'agent' isolates memories per (user, agent); default shared pool */
   memory_scope?: MemoryScope;
+  /** Set by an administrator: a disabled agent cannot run and is hidden from its viewers. */
+  disabled?: boolean;
   tenantId?: string;
 }

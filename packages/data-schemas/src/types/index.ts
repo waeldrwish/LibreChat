@@ -47,6 +47,7 @@ export * from './group';
 export * from './config';
 /* Admin */
 export * from './admin';
+export * from './governance';
 /* Web */
 export * from './web';
 /* MCP Servers */

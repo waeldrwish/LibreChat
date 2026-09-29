@@ -1,4 +1,5 @@
 import { createAgentQueuedTurnModel, createAgentQueuedTurnSequenceModel } from './queuedTurn';
+import { createModelPolicyModel, createUsageLimitModel } from './governance';
 import { createAgentTriggerLaneSequenceModel } from './triggerLaneSequence';
 import { createScheduleModel, createScheduleRunModel } from './schedule';
 import { createSkillSyncCredentialModel } from './skillSyncCredential';
@@ -96,6 +97,8 @@ export function createModels(mongoose: typeof import('mongoose')): {
   ScheduleRun: ReturnType<typeof createScheduleRunModel>;
   RefreshTokenBridge: ReturnType<typeof createRefreshTokenBridgeModel>;
   OpenIDRefreshFlight: ReturnType<typeof createOpenIDRefreshFlightModel>;
+  ModelPolicy: ReturnType<typeof createModelPolicyModel>;
+  UsageLimit: ReturnType<typeof createUsageLimitModel>;
 } {
   const models = {
     User: createUserModel(mongoose),
@@ -145,6 +148,8 @@ export function createModels(mongoose: typeof import('mongoose')): {
     ScheduleRun: createScheduleRunModel(mongoose),
     RefreshTokenBridge: createRefreshTokenBridgeModel(mongoose),
     OpenIDRefreshFlight: createOpenIDRefreshFlightModel(mongoose),
+    ModelPolicy: createModelPolicyModel(mongoose),
+    UsageLimit: createUsageLimitModel(mongoose),
   };
   /**
    * Background index builds fail silently unless an 'index' listener is

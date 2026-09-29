@@ -162,6 +162,11 @@ const agentSchema: Schema<IAgent> = new Schema<IAgent>(
       enum: ['user', 'agent'],
       default: undefined,
     },
+    /** Set by an administrator: a disabled agent cannot run and is hidden from its viewers. */
+    disabled: {
+      type: Boolean,
+      default: undefined,
+    },
     tenantId: {
       type: String,
       index: true,

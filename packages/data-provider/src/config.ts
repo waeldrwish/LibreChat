@@ -39,6 +39,7 @@ import { isActionTool } from './types/tools';
 import { apiBaseUrl } from './api-endpoints';
 import { FileSources } from './types/files';
 import { MCPServersSchema } from './mcp';
+import { governanceSchema } from './governance';
 export {
   MAX_SUBAGENTS,
   MAX_SUBAGENTS_CEILING,
@@ -59,7 +60,7 @@ export const DEFAULT_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 export const BASE_ONLY_CONFIG_SECTIONS = ['filters'] as const;
 /** Sections that may be stored in the tenant's base config document but must
  * not be overridden or tombstoned by role, group, or user config documents. */
-export const BASE_PRINCIPAL_CONFIG_SECTIONS = ['langfuse'] as const;
+export const BASE_PRINCIPAL_CONFIG_SECTIONS = ['langfuse', 'governance'] as const;
 
 export const defaultRetrievalModels = [
   'gpt-4o',
@@ -3003,6 +3004,8 @@ export const configSchema = z.object({
     .default({ socialLogins: defaultSocialLogins }),
   balance: balanceSchema.optional(),
   transactions: transactionsSchema.optional(),
+  /** Admin-panel policies: model access, usage limits and panel presentation. */
+  governance: governanceSchema.optional(),
   speech: z
     .object({
       tts: ttsSchema.optional(),
@@ -3643,6 +3646,10 @@ export enum ViolationTypes {
    * Shared link retrieval limit violations.
    */
   SHARE_LIMIT = 'share_limit',
+  /**
+   * Admin-assigned usage limit (tokens or messages per day/month) reached.
+   */
+  USAGE_LIMIT = 'usage_limit',
 }
 
 /**
@@ -3781,6 +3788,14 @@ export enum ErrorTypes {
    * A manual compaction whose summarizer produced nothing; history is untouched
    */
   COMPACTION_FAILED = 'compaction_failed',
+  /**
+   * The agent was disabled by an administrator
+   */
+  AGENT_DISABLED = 'agent_disabled',
+  /**
+   * The account was disabled by an administrator
+   */
+  ACCOUNT_DISABLED = 'account_disabled',
 }
 
 /**

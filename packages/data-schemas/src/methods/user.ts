@@ -481,11 +481,15 @@ export function createUserMethods(
     return false;
   }
 
+  /** Active = neither being deleted nor disabled by an administrator. */
   async function isAgentTriggerPrincipalActive(userId: string): Promise<boolean> {
     const User = mongoose.models.User;
     return (
-      (await User.exists({ _id: userId, agentTriggerDeletionStartedAt: { $exists: false } })) !=
-      null
+      (await User.exists({
+        _id: userId,
+        agentTriggerDeletionStartedAt: { $exists: false },
+        disabled: { $ne: true },
+      })) != null
     );
   }
 

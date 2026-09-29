@@ -169,6 +169,7 @@ export const AppService = async (params?: {
   const filters = loadFiltersConfig(config);
   const messageFilter = config.messageFilter;
   const langfuse = loadLangfuseConfig(config);
+  const governance = config.governance;
 
   const defaultConfig = {
     ocr,
@@ -188,6 +189,7 @@ export const AppService = async (params?: {
     includedTools,
     filters,
     langfuse,
+    governance,
     messageFilter,
     summarization,
     availableTools,

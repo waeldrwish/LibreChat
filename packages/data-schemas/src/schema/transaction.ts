@@ -65,4 +65,8 @@ const transactionSchema: Schema<ITransaction> = new Schema(
   },
 );
 
+/** Serves per-user usage windows (limit enforcement and the admin usage reports). */
+transactionSchema.index({ user: 1, createdAt: -1 });
+transactionSchema.index({ createdAt: -1 });
+
 export default transactionSchema;
