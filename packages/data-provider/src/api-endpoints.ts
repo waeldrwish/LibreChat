@@ -659,6 +659,7 @@ export const adminProviders = () => `${admin()}/models/providers`;
 export const adminAgents = (params: Record<string, unknown> = {}) =>
   `${admin()}/agents${buildQuery(params)}`;
 export const adminAgentStatus = (id: string) => `${adminId(`${admin()}/agents`, id)}/status`;
+export const adminAgentPolicy = () => `${admin()}/agents/policy`;
 
 export const adminMCPServers = (params: Record<string, unknown> = {}) =>
   `${admin()}/mcp${buildQuery(params)}`;

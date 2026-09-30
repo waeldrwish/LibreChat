@@ -481,6 +481,17 @@ export type TAdminAgentsParams = {
 
 export type TAdminAgentsPage = TAdminPage<'agents', TAdminAgent>;
 
+/** Whether one role may build and share agents outside the admin panel. */
+export type TAdminAgentPolicyRole = { name: string; create: boolean; share: boolean };
+
+export type TAdminAgentPolicy = {
+  /** No role other than ADMIN may create, edit or share agents. */
+  adminOnly: boolean;
+  roles: TAdminAgentPolicyRole[];
+  /** Whether the viewer may change it (it rewrites role permissions). */
+  canManage: boolean;
+};
+
 /* ── MCP servers ────────────────────────────────────────────────────── */
 
 /** An MCP server stored in the database, whoever created it. */
@@ -579,6 +590,16 @@ export const CHAT_SECTIONS = [
   { key: 'parameters' },
   { key: 'presets' },
   { key: 'agents', permissionType: PermissionTypes.AGENTS, permission: Permissions.USE },
+  {
+    key: 'agentBuilder',
+    permissionType: PermissionTypes.AGENTS,
+    permission: Permissions.CREATE,
+  },
+  {
+    key: 'agentSharing',
+    permissionType: PermissionTypes.AGENTS,
+    permission: Permissions.SHARE,
+  },
   {
     key: 'marketplace',
     permissionType: PermissionTypes.MARKETPLACE,

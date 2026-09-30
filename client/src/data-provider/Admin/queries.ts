@@ -14,6 +14,7 @@ import type {
   TAdminAgentsPage,
   TAdminTools,
   TAdminSections,
+  TAdminAgentPolicy,
   TAdminMCPServersPage,
   TAdminMCPServersParams,
   TAdminGroupsPage,
@@ -240,4 +241,14 @@ export const useAdminAuditLogQuery = (
     [QueryKeys.adminAuditLog, params],
     () => dataService.listAdminAuditLog(params),
     { ...defaults, keepPreviousData: true },
+  );
+
+export const useAdminAgentPolicyQuery = (enabled = true): UseQueryResult<TAdminAgentPolicy> =>
+  useQuery<TAdminAgentPolicy>(
+    [QueryKeys.adminAgentPolicy],
+    () => dataService.getAdminAgentPolicy(),
+    {
+      ...defaults,
+      enabled,
+    },
   );

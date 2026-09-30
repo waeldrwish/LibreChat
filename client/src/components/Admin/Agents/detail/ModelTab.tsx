@@ -1,65 +1,124 @@
-import { useState } from 'react';
-import { EModelEndpoint } from 'librechat-data-provider';
+import { useMemo, useState } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { Input, Button, Spinner, Dropdown } from '@librechat/client';
-import type { Agent, AgentModelParameters } from 'librechat-data-provider';
-import { useAdminModelCatalogQuery } from '~/data-provider';
+import { Permissions, PermissionTypes } from 'librechat-data-provider';
+import type {
+  Agent,
+  TSetOption,
+  TConversation,
+  AgentModelParameters,
+} from 'librechat-data-provider';
+import type { Dispatch, SetStateAction } from 'react';
+import {
+  pruneAgentModelParameters,
+  resolveAgentParameterSettings,
+} from '~/components/SidePanel/Agents/parameters';
+import {
+  useGetEndpointsQuery,
+  useGetStartupConfig,
+  useAdminModelCatalogQuery,
+} from '~/data-provider';
+import { componentMapping } from '~/components/SidePanel/Parameters/components';
+import { MarketplaceProvider } from '~/components/Agents/MarketplaceContext';
+import { Panel, SectionTitle } from '../../common/ui';
+import { useLocalize, useHasAccess } from '~/hooks';
 import { Field } from '../../common/controls';
 import { useAgentSave } from './useAgentSave';
-import { Panel } from '../../common/ui';
-import { useLocalize } from '~/hooks';
 
-type NumberField = 'temperature' | 'topP' | 'maxOutput' | 'maxContext' | 'steps';
+const STEPS = { min: 1, max: 500 };
 
-/** Parameter names differ by provider family; OpenAI-compatible names cover custom providers. */
-function parameterKeys(provider: string): { topP: string; maxOutput: string } {
-  if (provider === EModelEndpoint.anthropic || provider === EModelEndpoint.google) {
-    return { topP: 'topP', maxOutput: 'maxOutputTokens' };
-  }
-  if (provider === EModelEndpoint.bedrock) {
-    return { topP: 'topP', maxOutput: 'maxTokens' };
-  }
-  return { topP: 'top_p', maxOutput: 'max_tokens' };
-}
-
-const asText = (value: unknown): string =>
-  typeof value === 'number' || (typeof value === 'string' && value !== '') ? String(value) : '';
-
-function toNumbers(agent: Agent): Record<NumberField, string> {
-  const params = (agent.model_parameters ?? {}) as Record<string, unknown>;
-  const keys = parameterKeys(agent.provider ?? '');
-  return {
-    temperature: asText(params.temperature),
-    topP: asText(params[keys.topP]),
-    maxOutput: asText(params[keys.maxOutput]),
-    maxContext: asText(params.maxContextTokens),
-    steps: asText(agent.recursion_limit),
-  };
-}
-
-const LIMITS: Record<NumberField, { min: number; max?: number; step: number }> = {
-  temperature: { min: 0, max: 2, step: 0.1 },
-  topP: { min: 0, max: 1, step: 0.05 },
-  maxOutput: { min: 1, step: 1 },
-  maxContext: { min: 1, step: 1 },
-  steps: { min: 1, max: 500, step: 1 },
-};
-
-const inRange = (field: NumberField, value: string): boolean => {
+const stepsValid = (value: string): boolean => {
   if (value === '') {
     return true;
   }
   const number = Number(value);
-  const { min, max } = LIMITS[field];
-  return Number.isFinite(number) && number >= min && (max == null || number <= max);
+  return Number.isInteger(number) && number >= STEPS.min && number <= STEPS.max;
 };
+
+/**
+ * The provider's full parameter set, rendered with the same schema-driven controls as the
+ * agent builder so both edit the same `model_parameters` the same way.
+ */
+function Parameters({
+  provider,
+  model,
+  values,
+  onChange,
+}: {
+  provider: string;
+  model: string;
+  values: AgentModelParameters;
+  onChange: Dispatch<SetStateAction<AgentModelParameters>>;
+}) {
+  const localize = useLocalize();
+  const { data: endpointsConfig = {} } = useGetEndpointsQuery();
+  const { data: startupConfig } = useGetStartupConfig();
+  const webSearchAllowed = useHasAccess({
+    permissionType: PermissionTypes.WEB_SEARCH,
+    permission: Permissions.USE,
+  });
+  const settings = useMemo(
+    () =>
+      resolveAgentParameterSettings({
+        endpointsConfig,
+        model,
+        provider,
+        startupConfig,
+        webSearchAllowed,
+      }),
+    [endpointsConfig, model, provider, startupConfig, webSearchAllowed],
+  );
+  const regions = endpointsConfig?.[provider]?.availableRegions ?? [];
+
+  const setOption: TSetOption = (key) => (value) =>
+    onChange((current) => ({ ...current, [key]: value }) as AgentModelParameters);
+
+  if (settings.visibleParameters.length === 0) {
+    return <p className="text-sm text-text-secondary">{localize('com_admin_agent_params_none')}</p>;
+  }
+
+  return (
+    <MarketplaceProvider>
+      <div className="grid max-w-3xl grid-cols-2 gap-3 text-sm">
+        {settings.visibleParameters.map((setting) => {
+          const Component = componentMapping[setting.component];
+          if (!Component) {
+            return null;
+          }
+          const { key, default: defaultValue, ...rest } = setting;
+          if (key === 'region' && regions.length) {
+            rest.options = regions;
+          }
+          return (
+            <Component
+              key={`${provider}:${model}:${key}`}
+              settingKey={key}
+              defaultValue={defaultValue}
+              {...rest}
+              setOption={setOption}
+              conversation={values as Partial<TConversation>}
+            />
+          );
+        })}
+      </div>
+    </MarketplaceProvider>
+  );
+}
 
 export default function ModelTab({ agent }: { agent: Agent }) {
   const localize = useLocalize();
   const catalog = useAdminModelCatalogQuery();
+  const { data: endpointsConfig = {} } = useGetEndpointsQuery();
+  const { data: startupConfig } = useGetStartupConfig();
   const { save, isSaving } = useAgentSave(agent.id);
   const [provider, setProvider] = useState(agent.provider ?? '');
   const [model, setModel] = useState(agent.model ?? '');
-  const [numbers, setNumbers] = useState(() => toNumbers(agent));
+  const [params, setParams] = useState<AgentModelParameters>(
+    () => agent.model_parameters ?? ({} as AgentModelParameters),
+  );
+  const [steps, setSteps] = useState(() =>
+    agent.recursion_limit != null ? String(agent.recursion_limit) : '',
+  );
 
   const entries = catalog.data?.entries.filter((entry) => entry.available) ?? [];
   const providers = [...new Set([...entries.map((entry) => entry.endpoint), agent.provider])]
@@ -68,62 +127,28 @@ export default function ModelTab({ agent }: { agent: Agent }) {
   const models = entries
     .filter((entry) => entry.endpoint === provider)
     .map((entry) => ({ value: entry.model, label: entry.model }));
-  const valid =
-    provider !== '' &&
-    model !== '' &&
-    (Object.keys(numbers) as NumberField[]).every((field) => inRange(field, numbers[field]));
+  const valid = provider !== '' && model !== '' && stepsValid(steps);
 
   const submit = () => {
-    const keys = parameterKeys(provider);
-    const previous = parameterKeys(agent.provider ?? '');
-    const params: Record<string, unknown> = { ...(agent.model_parameters ?? {}) };
-    delete params[previous.topP];
-    delete params[previous.maxOutput];
-    const values: [string, string][] = [
-      ['temperature', numbers.temperature],
-      [keys.topP, numbers.topP],
-      [keys.maxOutput, numbers.maxOutput],
-      ['maxContextTokens', numbers.maxContext],
-    ];
-    for (const [key, value] of values) {
-      if (value === '') {
-        delete params[key];
-      } else {
-        params[key] = Number(value);
-      }
-    }
+    const settings = resolveAgentParameterSettings({
+      endpointsConfig,
+      model,
+      provider,
+      startupConfig,
+      webSearchAllowed: true,
+    });
+    const pruned = pruneAgentModelParameters(params, settings);
     save({
       provider,
       model,
-      model_parameters: { ...params, model } as AgentModelParameters,
-      ...(numbers.steps !== '' ? { recursion_limit: Number(numbers.steps) } : {}),
+      model_parameters: { ...pruned, model },
+      ...(steps !== '' ? { recursion_limit: Number(steps) } : {}),
     });
   };
 
-  const numberInput = (field: NumberField, label: string, hint: string) => (
-    <Field label={label} hint={hint}>
-      {(id, describedBy) => (
-        <Input
-          id={id}
-          dir="ltr"
-          type="number"
-          inputMode="decimal"
-          min={LIMITS[field].min}
-          max={LIMITS[field].max}
-          step={LIMITS[field].step}
-          placeholder={localize('com_admin_agent_param_default')}
-          aria-describedby={describedBy}
-          aria-invalid={!inRange(field, numbers[field])}
-          value={numbers[field]}
-          onChange={(e) => setNumbers((current) => ({ ...current, [field]: e.target.value }))}
-        />
-      )}
-    </Field>
-  );
-
   return (
-    <Panel>
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      <Panel>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label={localize('com_admin_field_provider')}>
             {() => (
@@ -154,40 +179,60 @@ export default function ModelTab({ agent }: { agent: Agent }) {
               />
             )}
           </Field>
+          <Field
+            label={localize('com_admin_agent_param_steps')}
+            hint={localize('com_admin_agent_param_steps_hint')}
+          >
+            {(id, describedBy) => (
+              <Input
+                id={id}
+                dir="ltr"
+                type="number"
+                inputMode="numeric"
+                min={STEPS.min}
+                max={STEPS.max}
+                step={1}
+                placeholder={localize('com_admin_agent_param_default')}
+                aria-describedby={describedBy}
+                aria-invalid={!stepsValid(steps)}
+                value={steps}
+                onChange={(e) => setSteps(e.target.value)}
+              />
+            )}
+          </Field>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {numberInput(
-            'temperature',
-            localize('com_admin_agent_param_temperature'),
-            localize('com_admin_agent_param_temperature_hint'),
-          )}
-          {numberInput(
-            'topP',
-            localize('com_admin_agent_param_top_p'),
-            localize('com_admin_agent_param_top_p_hint'),
-          )}
-          {numberInput(
-            'maxOutput',
-            localize('com_admin_agent_param_max_output'),
-            localize('com_admin_agent_param_max_output_hint'),
-          )}
-          {numberInput(
-            'maxContext',
-            localize('com_admin_agent_param_max_context'),
-            localize('com_admin_agent_param_max_context_hint'),
-          )}
-          {numberInput(
-            'steps',
-            localize('com_admin_agent_param_steps'),
-            localize('com_admin_agent_param_steps_hint'),
-          )}
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={submit} disabled={!valid || isSaving}>
-            {isSaving ? <Spinner className="size-4" /> : localize('com_admin_save')}
-          </Button>
-        </div>
+      </Panel>
+      <Panel>
+        <SectionTitle
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setParams({} as AgentModelParameters)}
+            >
+              <RotateCcw className="size-4" aria-hidden="true" />
+              {localize('com_admin_agent_params_reset')}
+            </Button>
+          }
+        >
+          {localize('com_admin_agent_params')}
+        </SectionTitle>
+        <p className="mb-4 text-xs text-text-secondary">
+          {localize('com_admin_agent_params_hint')}
+        </p>
+        {provider && model ? (
+          <Parameters provider={provider} model={model} values={params} onChange={setParams} />
+        ) : (
+          <p className="text-sm text-text-secondary">
+            {localize('com_admin_agent_params_pick_model')}
+          </p>
+        )}
+      </Panel>
+      <div className="flex justify-end">
+        <Button onClick={submit} disabled={!valid || isSaving}>
+          {isSaving ? <Spinner className="size-4" /> : localize('com_admin_save')}
+        </Button>
       </div>
-    </Panel>
+    </div>
   );
 }

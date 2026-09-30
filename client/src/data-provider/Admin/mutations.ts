@@ -11,6 +11,7 @@ import type {
   TPrincipalAccessUpdate,
   TAdminToolUpdate,
   TAdminSectionUpdate,
+  TAdminAgentPolicy,
   TAdminCreateUserRequest,
   TAdminUpdateUserRequest,
   TAdminRole,
@@ -215,5 +216,20 @@ export const useUpdateAdminSettingsMutation = () =>
       QueryKeys.adminSession,
       QueryKeys.adminModelCatalog,
       QueryKeys.startupConfig,
+    ],
+  );
+
+export const useUpdateAdminAgentPolicyMutation = (): UseMutationResult<
+  TAdminAgentPolicy,
+  unknown,
+  boolean
+> =>
+  useAdminMutation(
+    (adminOnly: boolean) => dataService.updateAdminAgentPolicy(adminOnly),
+    [
+      QueryKeys.adminAgentPolicy,
+      QueryKeys.adminSections,
+      QueryKeys.adminRole,
+      QueryKeys.adminAuditLog,
     ],
   );

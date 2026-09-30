@@ -20,6 +20,8 @@ const SECTION_LABELS: Record<ChatSectionKey, TranslationKeys> = {
   parameters: 'com_admin_section_parameters',
   presets: 'com_admin_section_presets',
   agents: 'com_admin_section_agents',
+  agentBuilder: 'com_admin_section_agent_builder',
+  agentSharing: 'com_admin_section_agent_sharing',
   marketplace: 'com_admin_section_marketplace',
   prompts: 'com_admin_section_prompts',
   skills: 'com_admin_section_skills',

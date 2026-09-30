@@ -1,19 +1,20 @@
 import { ArrowRight } from 'lucide-react';
 import { Switch } from '@librechat/client';
-import { Link, useParams } from 'react-router-dom';
+import { QueryKeys } from 'librechat-data-provider';
 import { useQueryClient } from '@tanstack/react-query';
-import { QueryKeys, ResourceType } from 'librechat-data-provider';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Agent } from 'librechat-data-provider';
 import { useGetExpandedAgentByIdQuery, useSetAdminAgentStatusMutation } from '~/data-provider';
 import { PageHeader, Panel, QueryState, StatusBadge, useAdminNotify } from '../common/ui';
-import { GenericGrantAccessDialog } from '~/components/Sharing';
 import { useAdminFormat } from '../common/format';
+import Distribution from './detail/Distribution';
 import SettingsTab from './detail/SettingsTab';
 import { Cap, useAdmin } from '../context';
 import PageTabs from '../common/PageTabs';
 import ModelTab from './detail/ModelTab';
 import ToolsTab from './detail/ToolsTab';
 import FilesTab from './detail/FilesTab';
+import DeleteAgent from './DeleteAgent';
 import { useLocalize } from '~/hooks';
 
 /** The stored agent also carries the operational `disabled` flag the admin panel sets. */
@@ -66,25 +67,7 @@ function AccessTab({ agent }: { agent: AdminAgentDetail }) {
           />
         </div>
       </Panel>
-      <Panel>
-        <div className="flex items-center justify-between gap-3">
-          <span className="min-w-0">
-            <span className="block text-sm font-medium text-text-primary">
-              {localize('com_admin_agent_shared')}
-            </span>
-            <span className="text-xs text-text-secondary">
-              {localize('com_admin_agent_share_hint')}
-            </span>
-          </span>
-          <GenericGrantAccessDialog
-            resourceDbId={agent._id}
-            resourceId={agent.id}
-            resourceName={agent.name ?? agent.id}
-            resourceType={ResourceType.AGENT}
-            onGrantAccess={() => queryClient.invalidateQueries([QueryKeys.adminAgents])}
-          />
-        </div>
-      </Panel>
+      <Distribution agent={agent} />
       <Panel>
         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
           {rows.map(([label, value]) => (
@@ -104,6 +87,7 @@ function AccessTab({ agent }: { agent: AdminAgentDetail }) {
 function AgentDetail({ agent }: { agent: AdminAgentDetail }) {
   const localize = useLocalize();
   const { can } = useAdmin();
+  const navigate = useNavigate();
   const canManage = can(Cap.MANAGE_AGENTS);
   const name = agent.name || agent.id;
 
@@ -141,10 +125,19 @@ function AgentDetail({ agent }: { agent: AdminAgentDetail }) {
         title={name}
         description={agent.description ?? undefined}
         actions={
-          <StatusBadge
-            active={agent.disabled !== true}
-            label={localize(agent.disabled === true ? 'com_admin_disabled' : 'com_admin_enabled')}
-          />
+          <div className="flex items-center gap-2">
+            <StatusBadge
+              active={agent.disabled !== true}
+              label={localize(agent.disabled === true ? 'com_admin_disabled' : 'com_admin_enabled')}
+            />
+            {canManage && (
+              <DeleteAgent
+                id={agent.id}
+                name={name}
+                onDeleted={() => navigate('/admin/agents', { replace: true })}
+              />
+            )}
+          </div>
         }
       />
       {canManage ? (

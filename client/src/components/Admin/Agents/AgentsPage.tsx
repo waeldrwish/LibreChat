@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { Bot, Globe, Pencil, Plus } from 'lucide-react';
-import { QueryKeys, ResourceType } from 'librechat-data-provider';
+import { Bot, Globe, Plus, Pencil, Share2 } from 'lucide-react';
 import {
   Table,
   Button,
@@ -17,12 +15,13 @@ import {
 import type { TAdminAgent } from 'librechat-data-provider';
 import { useAdminAgentsQuery, useSetAdminAgentStatusMutation } from '~/data-provider';
 import { Empty, PageHeader, Panel, QueryState, useAdminNotify } from '../common/ui';
-import { GenericGrantAccessDialog } from '~/components/Sharing';
 import { Pager, SearchBox } from '../common/controls';
 import { useLocalize, useDebounce } from '~/hooks';
 import { useAdminFormat } from '../common/format';
 import AgentFormDialog from './AgentFormDialog';
 import { Cap, useAdmin } from '../context';
+import AgentPolicy from './AgentPolicy';
+import DeleteAgent from './DeleteAgent';
 
 const PAGE_SIZE = 25;
 const ALL = '__all__';
@@ -56,7 +55,6 @@ export default function AgentsPage() {
   const localize = useLocalize();
   const format = useAdminFormat();
   const { can } = useAdmin();
-  const queryClient = useQueryClient();
   const canManage = can(Cap.MANAGE_AGENTS);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(ALL);
@@ -85,6 +83,7 @@ export default function AgentsPage() {
           )
         }
       />
+      <AgentPolicy />
       <Panel>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <SearchBox
@@ -188,15 +187,17 @@ export default function AgentsPage() {
                                 <Pencil className="size-4" aria-hidden="true" />
                               </Link>
                             </Button>
-                            <GenericGrantAccessDialog
-                              resourceDbId={agent._id}
-                              resourceId={agent.id}
-                              resourceName={agent.name}
-                              resourceType={ResourceType.AGENT}
-                              onGrantAccess={() =>
-                                queryClient.invalidateQueries([QueryKeys.adminAgents])
-                              }
-                            />
+                            <Button asChild variant="ghost" size="icon-sm">
+                              <Link
+                                to={`${agent.id}?tab=access`}
+                                aria-label={localize('com_admin_agent_distribute_named', {
+                                  0: agent.name,
+                                })}
+                              >
+                                <Share2 className="size-4" aria-hidden="true" />
+                              </Link>
+                            </Button>
+                            <DeleteAgent id={agent.id} name={agent.name} compact={true} />
                           </div>
                         </TableCell>
                       )}

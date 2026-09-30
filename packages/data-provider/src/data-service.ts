@@ -1870,6 +1870,14 @@ export function setAdminAgentStatus(
   return request.patch(endpoints.adminAgentStatus(id), { disabled });
 }
 
+export function getAdminAgentPolicy(): Promise<adm.TAdminAgentPolicy> {
+  return request.get(endpoints.adminAgentPolicy());
+}
+
+export function updateAdminAgentPolicy(adminOnly: boolean): Promise<adm.TAdminAgentPolicy> {
+  return request.put(endpoints.adminAgentPolicy(), { adminOnly });
+}
+
 export function listAdminMCPServers(
   params: adm.TAdminMCPServersParams,
 ): Promise<adm.TAdminMCPServersPage> {
