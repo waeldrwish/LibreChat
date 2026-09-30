@@ -1,13 +1,19 @@
 import { z } from 'zod';
-import { PrincipalType, PrincipalModel } from 'librechat-data-provider';
+import { PrincipalType, PrincipalModel, OPENAI_IMAGE_MODELS } from 'librechat-data-provider';
 import { logger, SystemCapabilities, BASE_CONFIG_PRINCIPAL_ID } from '@librechat/data-schemas';
+import type {
+  TPlugin,
+  TAdminTool,
+  TAdminTools,
+  TAdminImageSettings,
+  TImageGenerationConfig,
+} from 'librechat-data-provider';
 import type {
   IConfig,
   AppConfig,
   SystemCapability,
   PluginAuthMethods,
 } from '@librechat/data-schemas';
-import type { TPlugin, TAdminTool, TAdminTools } from 'librechat-data-provider';
 import type { Response } from 'express';
 import type { AdminAuditRecorder, AdminHandler } from './trail';
 import type { ServerRequest } from '~/types/http';
@@ -19,6 +25,7 @@ import {
   SYSTEM_TOOL_CREDENTIALS_OWNER,
 } from '~/tools/credentials';
 import { isToolEnabled, setToolEnabled } from '~/tools/availability';
+import { resolveOpenAIImageModel } from '~/tools/toolkits/imaging';
 import { resolveAdminActor } from './trail';
 import { toCapabilityUser } from './scope';
 
@@ -52,16 +59,72 @@ export interface AdminToolsDeps {
   recordAdminAction: AdminAuditRecorder;
 }
 
+/** The one tool whose settings live in `imageGeneration.openai`. */
+const IMAGE_SETTINGS_TOOL = 'image_gen_oai';
+
 const updateSchema = z
   .object({
     enabled: z.boolean().optional(),
     credentials: z
       .record(z.string().min(1).max(128), z.string().trim().min(1).max(4096).nullable())
       .optional(),
+    imageSettings: z
+      .object({
+        model: z
+          .string()
+          .trim()
+          .regex(/^[\w.:/-]{1,128}$/)
+          .nullable()
+          .optional(),
+        moderation: z.enum(['auto', 'low']).nullable().optional(),
+      })
+      .optional(),
   })
-  .refine((body) => body.enabled !== undefined || body.credentials !== undefined, {
-    message: 'Nothing to update',
-  });
+  .refine(
+    (body) =>
+      body.enabled !== undefined ||
+      body.credentials !== undefined ||
+      body.imageSettings !== undefined,
+    { message: 'Nothing to update' },
+  );
+
+function toImageSettings(
+  config: AppConfig | null | undefined,
+  env: Record<string, string | undefined>,
+): TAdminImageSettings {
+  const settings = config?.imageGeneration?.openai;
+  let modelSource: TAdminImageSettings['modelSource'] = 'default';
+  if (settings?.model) {
+    modelSource = 'panel';
+  } else if (env.IMAGE_GEN_OAI_MODEL) {
+    modelSource = 'env';
+  }
+  return {
+    model: resolveOpenAIImageModel(config?.imageGeneration, env),
+    modelSource,
+    moderation: settings?.moderation,
+    models: [...OPENAI_IMAGE_MODELS],
+  };
+}
+
+/** Applies a partial update where `null` clears a field, dropping empty objects. */
+function mergeImageSettings(
+  current: TImageGenerationConfig | undefined,
+  update: { model?: string | null; moderation?: 'auto' | 'low' | null },
+): TImageGenerationConfig {
+  const openai: Record<string, unknown> = { ...(current?.openai ?? {}) };
+  for (const [field, value] of Object.entries(update)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (value === null) {
+      delete openai[field];
+    } else {
+      openai[field] = value;
+    }
+  }
+  return { ...current, openai: openai as TImageGenerationConfig['openai'] };
+}
 
 function toAdminTool(
   plugin: TPlugin,
@@ -82,6 +145,9 @@ function toAdminTool(
       optional: field.optional,
       source: toolCredentialSource(field.alternates, env, systemFields),
     })),
+    ...(plugin.pluginKey === IMAGE_SETTINGS_TOOL
+      ? { imageSettings: toImageSettings(config, env) }
+      : {}),
   };
 }
 
@@ -122,7 +188,11 @@ export function createAdminToolsHandlers(
     }
   }
 
-  async function writeEnabled(tenantId: string | undefined, key: string, enabled: boolean) {
+  /** Writes into the base override, computing the change from the effective tenant config. */
+  async function writeOverrides(
+    tenantId: string | undefined,
+    change: (config: AppConfig, overrides: Record<string, unknown>) => Record<string, unknown>,
+  ) {
     const [config, existing] = await Promise.all([
       deps.getTenantConfig(tenantId),
       deps.findConfigByPrincipal(PrincipalType.ROLE, BASE_CONFIG_PRINCIPAL_ID, {
@@ -134,7 +204,7 @@ export function createAdminToolsHandlers(
       PrincipalType.ROLE,
       BASE_CONFIG_PRINCIPAL_ID,
       PrincipalModel.ROLE,
-      { ...overrides, ...setToolEnabled(config, key, enabled) },
+      { ...overrides, ...change(config, overrides) },
       existing?.priority ?? 0,
       undefined,
       { expectEmpty: false },
@@ -162,7 +232,10 @@ export function createAdminToolsHandlers(
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.errors[0]?.message ?? 'Invalid body' });
       }
-      const { enabled, credentials } = parsed.data;
+      const { enabled, credentials, imageSettings } = parsed.data;
+      if (imageSettings && key !== IMAGE_SETTINGS_TOOL) {
+        return res.status(400).json({ error: 'This tool has no settings' });
+      }
       const fields = new Set(toolCredentialFields(plugin).map((field) => field.field));
       const unknownField = Object.keys(credentials ?? {}).find((field) => !fields.has(field));
       if (unknownField) {
@@ -197,8 +270,26 @@ export function createAdminToolsHandlers(
         });
       }
 
+      if (imageSettings) {
+        await writeOverrides(actor.tenantId, (_config, overrides) => ({
+          imageGeneration: mergeImageSettings(
+            overrides.imageGeneration as TImageGenerationConfig | undefined,
+            imageSettings,
+          ),
+        }));
+        await deps.recordAdminAction(req, {
+          action: 'tool.settings_updated',
+          severity: 'info',
+          target: { type: 'tool', id: key, name: plugin.name },
+          metadata: {
+            model: imageSettings.model ?? '',
+            moderation: imageSettings.moderation ?? '',
+          },
+        });
+      }
+
       if (enabled !== undefined) {
-        await writeEnabled(actor.tenantId, key, enabled);
+        await writeOverrides(actor.tenantId, (config) => setToolEnabled(config, key, enabled));
         await deps.recordAdminAction(req, {
           action: enabled ? 'tool.enabled' : 'tool.disabled',
           severity: enabled ? 'info' : 'warning',

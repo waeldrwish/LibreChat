@@ -76,6 +76,7 @@ export const AUDIT_ACTIONS = [
   'tool.enabled',
   'tool.disabled',
   'tool.credentials_updated',
+  'tool.settings_updated',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -116,6 +117,7 @@ export const AUDIT_ACTION_CATEGORY: Record<AuditAction, AuditCategory> = {
   'tool.enabled': 'tool',
   'tool.disabled': 'tool',
   'tool.credentials_updated': 'tool',
+  'tool.settings_updated': 'tool',
 };
 
 /** Result of the audited operation. Kept first-class instead of being encoded
@@ -528,6 +530,17 @@ export type TAdminToolCredential = {
   source: TToolCredentialSource;
 };
 
+/** Where the OpenAI Image Tools model comes from. */
+export type TImageModelSource = 'panel' | 'env' | 'default';
+
+export type TAdminImageSettings = {
+  model: string;
+  modelSource: TImageModelSource;
+  moderation?: 'auto' | 'low';
+  /** Models offered by name, newest first. */
+  models: string[];
+};
+
 export type TAdminTool = {
   key: string;
   name: string;
@@ -535,6 +548,8 @@ export type TAdminTool = {
   icon?: string;
   enabled: boolean;
   credentials: TAdminToolCredential[];
+  /** Only the OpenAI Image Tools have settings. */
+  imageSettings?: TAdminImageSettings;
 };
 
 export type TAdminTools = {
@@ -547,6 +562,8 @@ export type TAdminToolUpdate = {
   enabled?: boolean;
   /** Field → new key; `null` removes the stored key. */
   credentials?: Record<string, string | null>;
+  /** OpenAI Image Tools only; `null` returns a field to its default. */
+  imageSettings?: { model?: string | null; moderation?: 'auto' | 'low' | null };
 };
 
 /* ── Usage ──────────────────────────────────────────────────────────── */

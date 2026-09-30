@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyRound, Puzzle } from 'lucide-react';
+import { KeyRound, Puzzle, Settings2 } from 'lucide-react';
 import {
   Button,
   Switch,
@@ -16,6 +16,7 @@ import type {
 import type { TranslationKeys } from '~/hooks';
 import { Empty, Panel, PageHeader, QueryState, useAdminNotify } from '../common/ui';
 import { useAdminToolsQuery, useUpdateAdminToolMutation } from '~/data-provider';
+import ImageSettingsDialog from './ImageSettingsDialog';
 import { Field } from '../common/controls';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
@@ -158,6 +159,7 @@ function ToolRow({ tool, canManage }: { tool: TAdminTool; canManage: boolean }) 
   const notify = useAdminNotify();
   const update = useUpdateAdminToolMutation();
   const [editingKeys, setEditingKeys] = useState(false);
+  const [editingSettings, setEditingSettings] = useState(false);
 
   const toggle = (enabled: boolean) =>
     update.mutate(
@@ -183,6 +185,11 @@ function ToolRow({ tool, canManage }: { tool: TAdminTool; canManage: boolean }) 
         {tool.description && (
           <span className="line-clamp-2 text-sm text-text-secondary">{tool.description}</span>
         )}
+        {tool.imageSettings && (
+          <span className="mt-1 block text-xs text-text-secondary">
+            {localize('com_admin_tool_image_model_current', { 0: tool.imageSettings.model })}
+          </span>
+        )}
         {tool.credentials.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {tool.credentials.map((credential) => (
@@ -192,6 +199,12 @@ function ToolRow({ tool, canManage }: { tool: TAdminTool; canManage: boolean }) 
         )}
       </div>
       <div className="flex items-center gap-2">
+        {canManage && tool.imageSettings && (
+          <Button variant="outline" size="sm" onClick={() => setEditingSettings(true)}>
+            <Settings2 className="size-4" aria-hidden="true" />
+            {localize('com_admin_tool_settings')}
+          </Button>
+        )}
         {canManage && tool.credentials.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setEditingKeys(true)}>
             <KeyRound className="size-4" aria-hidden="true" />
@@ -206,6 +219,14 @@ function ToolRow({ tool, canManage }: { tool: TAdminTool; canManage: boolean }) 
         />
       </div>
       {editingKeys && <KeysDialog tool={tool} onClose={() => setEditingKeys(false)} />}
+      {editingSettings && tool.imageSettings && (
+        <ImageSettingsDialog
+          toolKey={tool.key}
+          toolName={tool.name}
+          settings={tool.imageSettings}
+          onClose={() => setEditingSettings(false)}
+        />
+      )}
     </li>
   );
 }

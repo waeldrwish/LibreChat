@@ -2908,6 +2908,32 @@ export const openIdDiscoverySchema = z.object({
 
 export type TOpenIdDiscoveryConfig = z.infer<typeof openIdDiscoverySchema>;
 
+/** OpenAI image models the OpenAI Image Tools offer by name, newest first. Others can still be configured. */
+export const OPENAI_IMAGE_MODELS = [
+  'gpt-image-2.5-flare',
+  'gpt-image-2.5-sunburst',
+  'gpt-image-2',
+  'gpt-image-1.5',
+  'gpt-image-1',
+  'gpt-image-1-mini',
+] as const;
+
+/** Used when neither `imageGeneration.openai.model` nor `IMAGE_GEN_OAI_MODEL` is set. */
+export const DEFAULT_OPENAI_IMAGE_MODEL = 'gpt-image-1';
+
+export const imageGenerationSchema = z.object({
+  openai: z
+    .object({
+      /** Image model for the OpenAI Image Tools; `IMAGE_GEN_OAI_MODEL` applies when unset. */
+      model: z.string().trim().min(1).max(128).optional(),
+      /** Content moderation strictness; the API default (`auto`) applies when unset. */
+      moderation: z.enum(['auto', 'low']).optional(),
+    })
+    .optional(),
+});
+
+export type TImageGenerationConfig = z.infer<typeof imageGenerationSchema>;
+
 export const configSchema = z.object({
   version: z.string(),
   cache: z.boolean().default(true),
@@ -2919,6 +2945,7 @@ export const configSchema = z.object({
   skillSync: skillSyncConfigSchema,
   secureImageLinks: z.boolean().optional(),
   imageOutputType: z.nativeEnum(EImageOutputType).default(EImageOutputType.PNG),
+  imageGeneration: imageGenerationSchema.optional(),
   includedTools: z.array(z.string()).optional(),
   filteredTools: z.array(z.string()).optional(),
   mcpServers: MCPServersSchema.optional(),

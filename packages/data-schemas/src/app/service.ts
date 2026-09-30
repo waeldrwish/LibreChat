@@ -170,6 +170,7 @@ export const AppService = async (params?: {
   const messageFilter = config.messageFilter;
   const langfuse = loadLangfuseConfig(config);
   const governance = config.governance;
+  const imageGeneration = config.imageGeneration;
 
   const defaultConfig = {
     ocr,
@@ -194,6 +195,7 @@ export const AppService = async (params?: {
     summarization,
     availableTools,
     imageOutputType,
+    imageGeneration,
     interfaceConfig,
     turnstileConfig,
     mcpConfig: mcpServersConfig,

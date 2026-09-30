@@ -2,7 +2,8 @@ const { AuthType } = require('librechat-data-provider');
 const { withSystemToolCredentials } = require('@librechat/api');
 const { getUserPluginAuthValue } = require('~/server/services/PluginService');
 
-const getToolAuthValue = withSystemToolCredentials(getUserPluginAuthValue);
+/** An administrator's stored key first, then the user's own; built per call so importing stays side-effect free. */
+const getToolAuthValue = (...args) => withSystemToolCredentials(getUserPluginAuthValue)(...args);
 
 /**
  *

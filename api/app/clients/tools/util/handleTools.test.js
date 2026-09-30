@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const { SYSTEM_TOOL_CREDENTIALS_OWNER } = require('@librechat/api');
 
 const mockPluginService = {
   updateUserPluginAuth: jest.fn(),
@@ -286,6 +287,12 @@ describe('Tool Handlers', () => {
       expect(mockPluginService.getUserPluginAuthValue).not.toHaveBeenCalled();
     });
 
+    /** Lookups for the user's own key; each follows one for a key an administrator stored. */
+    const userLookups = () =>
+      mockPluginService.getUserPluginAuthValue.mock.calls.filter(
+        ([userId]) => userId !== SYSTEM_TOOL_CREDENTIALS_OWNER,
+      );
+
     it('should initialize an authenticated tool with alternate auth field when primary is missing', async () => {
       delete process.env.DALLE3_API_KEY; // Ensure the primary key is not set
       process.env.DALLE_API_KEY = 'mocked_alternate_api_key';
@@ -297,12 +304,7 @@ describe('Tool Handlers', () => {
       const authTool = await initToolFunction();
 
       expect(authTool).toBeInstanceOf(ToolClass);
-      expect(mockPluginService.getUserPluginAuthValue).toHaveBeenCalledTimes(1);
-      expect(mockPluginService.getUserPluginAuthValue).toHaveBeenCalledWith(
-        'userId',
-        'DALLE3_API_KEY',
-        true,
-      );
+      expect(userLookups()).toEqual([['userId', 'DALLE3_API_KEY', true]]);
     });
 
     it('should fallback to getUserPluginAuthValue when env vars are missing', async () => {
@@ -315,7 +317,7 @@ describe('Tool Handlers', () => {
       const authTool = await initToolFunction();
 
       expect(authTool).toBeInstanceOf(ToolClass);
-      expect(mockPluginService.getUserPluginAuthValue).toHaveBeenCalledTimes(2);
+      expect(userLookups()).toHaveLength(2);
     });
 
     it('marks credentials without an operator value as user-provided', async () => {

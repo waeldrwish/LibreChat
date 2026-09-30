@@ -1,4 +1,5 @@
 import type { ExtendedJsonSchema } from '../registry/schema';
+import { OPENAI_IMAGE_QUALITIES } from './imaging';
 
 /** Default descriptions for image generation tool  */
 const DEFAULT_IMAGE_GEN_DESCRIPTION =
@@ -70,6 +71,37 @@ const getImageEditPromptDescription = () => {
 /** `auto` or `WIDTHxHEIGHT`; the image API enforces which dimensions the configured model supports. */
 export const IMAGE_SIZE_PATTERN = '^(auto|[1-9][0-9]*x[1-9][0-9]*)$';
 
+/** Most images one call may return; each is saved and shown to the user. */
+export const MAX_IMAGES_PER_CALL = 4;
+
+const qualityProperty: ExtendedJsonSchema = {
+  type: 'string',
+  enum: [...OPENAI_IMAGE_QUALITIES],
+  description:
+    'Rendering quality: auto (default), low, medium, high, or the higher xhigh and max tiers for the most detailed output. Models without xhigh/max use high instead. Higher quality takes longer and costs more; use it for text-heavy images, fine detail, or when asked.',
+};
+
+const sizeProperty: ExtendedJsonSchema = {
+  type: 'string',
+  pattern: IMAGE_SIZE_PATTERN,
+  description:
+    'WIDTHxHEIGHT in pixels, or auto (default). Every model accepts 1024x1024, 1536x1024 (landscape) and 1024x1536 (portrait). Newer models also take custom sizes: both sides multiples of 16, no side over 3840, aspect ratio at most 3:1, and 655,360 to 8,294,400 pixels in total (e.g. 2048x2048, 3840x2160, 2160x3840). An unsupported size returns an explanation instead of an image.',
+};
+
+const backgroundProperty: ExtendedJsonSchema = {
+  type: 'string',
+  enum: ['transparent', 'opaque', 'auto'],
+  description:
+    'Sets transparency for the background. Must be one of transparent, opaque or auto (default). Use transparent for logos, icons or stickers.',
+};
+
+const countProperty: ExtendedJsonSchema = {
+  type: 'integer',
+  minimum: 1,
+  maximum: MAX_IMAGES_PER_CALL,
+  description: `How many variations to create, 1 (default) to ${MAX_IMAGES_PER_CALL}. Only ask for more than one when the user wants options to choose from.`,
+};
+
 const imageGenOaiJsonSchema: ExtendedJsonSchema = {
   type: 'object',
   properties: {
@@ -78,23 +110,10 @@ const imageGenOaiJsonSchema: ExtendedJsonSchema = {
       maxLength: 32000,
       description: getImageGenPromptDescription(),
     },
-    background: {
-      type: 'string',
-      enum: ['transparent', 'opaque', 'auto'],
-      description:
-        'Sets transparency for the background. Must be one of transparent, opaque or auto (default). When transparent, the output format should be png or webp.',
-    },
-    quality: {
-      type: 'string',
-      enum: ['auto', 'high', 'medium', 'low'],
-      description: 'The quality of the image. One of auto (default), high, medium, or low.',
-    },
-    size: {
-      type: 'string',
-      pattern: IMAGE_SIZE_PATTERN,
-      description:
-        'The size of the generated image as WIDTHxHEIGHT in pixels, or auto (default). Common sizes: 1024x1024, 1536x1024 (landscape), 1024x1536 (portrait). Models that support custom dimensions accept others, e.g. 2048x2048 or 3840x2160; the image API rejects sizes the configured model does not support.',
-    },
+    background: backgroundProperty,
+    quality: qualityProperty,
+    size: sizeProperty,
+    n: countProperty,
   },
   required: ['prompt'],
 };
@@ -118,18 +137,10 @@ Guidelines:
       maxLength: 32000,
       description: getImageEditPromptDescription(),
     },
-    quality: {
-      type: 'string',
-      enum: ['auto', 'high', 'medium', 'low'],
-      description:
-        'The quality of the image. One of auto (default), high, medium, or low. High/medium/low only supported for gpt-image-1.',
-    },
-    size: {
-      type: 'string',
-      pattern: IMAGE_SIZE_PATTERN,
-      description:
-        'The size of the generated images as WIDTHxHEIGHT in pixels, or auto (default). Common sizes: 1024x1024, 1536x1024, 1024x1536; dall-e-2 uses 256x256, 512x512 or 1024x1024. Models that support custom dimensions accept others, e.g. 3840x2160.',
-    },
+    background: backgroundProperty,
+    quality: qualityProperty,
+    size: sizeProperty,
+    n: countProperty,
   },
   required: ['image_ids', 'prompt'],
 };

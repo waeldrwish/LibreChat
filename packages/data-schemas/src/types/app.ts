@@ -90,6 +90,8 @@ export interface AppConfig {
   includedTools?: string[];
   /** Image output type configuration */
   imageOutputType: string;
+  /** OpenAI Image Tools settings (model, moderation). */
+  imageGeneration?: TCustomConfig['imageGeneration'];
   /** Interface configuration */
   interfaceConfig?: TCustomConfig['interface'];
   /** Turnstile configuration */

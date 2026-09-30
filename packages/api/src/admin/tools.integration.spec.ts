@@ -36,6 +36,12 @@ const TOOLS: TPlugin[] = [
     pluginKey: 'dalle',
     authConfig: [{ authField: 'DALLE3_API_KEY||DALLE_API_KEY', label: 'Key', description: '' }],
   },
+  {
+    name: 'OpenAI Image Tools',
+    pluginKey: 'image_gen_oai',
+    toolkit: true,
+    authConfig: [{ authField: 'IMAGE_GEN_OAI_API_KEY', label: 'Key', description: '' }],
+  },
 ];
 
 const ENV: Record<string, string | undefined> = { TAVILY_API_KEY: AuthType.USER_PROVIDED };
@@ -159,7 +165,14 @@ describe('tools and MCP servers from the admin panel (real database)', () => {
     expect(body.tools.map((tool) => [tool.key, tool.enabled])).toEqual([
       ['tavily_search_results_json', true],
       ['dalle', true],
+      ['image_gen_oai', true],
     ]);
+    expect(body.tools[0].imageSettings).toBeUndefined();
+    expect(body.tools[2].imageSettings).toMatchObject({
+      model: 'gpt-image-1',
+      modelSource: 'default',
+      models: expect.arrayContaining(['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']),
+    });
     expect(body.tools[0].credentials[0]).toMatchObject({ field: 'TAVILY_API_KEY', source: 'user' });
     expect(body.tools[1].credentials[0]).toMatchObject({
       field: 'DALLE3_API_KEY',
@@ -216,6 +229,40 @@ describe('tools and MCP servers from the admin panel (real database)', () => {
         authField: 'TAVILY_API_KEY',
       }),
     ).toBeNull();
+  });
+
+  it('chooses the image model and moderation for the OpenAI Image Tools', async () => {
+    as(superAdmin);
+    const response = await request(app)
+      .patch('/admin/tools/image_gen_oai')
+      .send({ imageSettings: { model: 'gpt-image-2.5-flare', moderation: 'low' } })
+      .expect(200);
+    expect(response.body.tool.imageSettings).toMatchObject({
+      model: 'gpt-image-2.5-flare',
+      modelSource: 'panel',
+      moderation: 'low',
+    });
+    expect((await getTenantConfig()).imageGeneration).toEqual({
+      openai: { model: 'gpt-image-2.5-flare', moderation: 'low' },
+    });
+
+    await request(app)
+      .patch('/admin/tools/image_gen_oai')
+      .send({ imageSettings: { moderation: null } })
+      .expect(200);
+    expect((await getTenantConfig()).imageGeneration).toEqual({
+      openai: { model: 'gpt-image-2.5-flare' },
+    });
+
+    const refused = await Promise.all([
+      request(app)
+        .patch('/admin/tools/dalle')
+        .send({ imageSettings: { model: 'gpt-image-2' } }),
+      request(app)
+        .patch('/admin/tools/image_gen_oai')
+        .send({ imageSettings: { model: 'bad model name' } }),
+    ]);
+    expect(refused.map((item) => item.status)).toEqual([400, 400]);
   });
 
   it('refuses unknown tools and fields', async () => {

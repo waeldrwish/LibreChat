@@ -6,11 +6,16 @@ const { logger } = require('@librechat/data-schemas');
 const { tool } = require('@librechat/agents/langchain/tools');
 const { ContentTypes, EImageOutputType } = require('librechat-data-provider');
 const {
-  logAxiosError,
   oaiToolkit,
+  logAxiosError,
+  checkImageSize,
   extractBaseURL,
   getProxyDispatcher,
+  resolveImageQuality,
+  MAX_IMAGES_PER_CALL,
   applyAxiosProxyConfig,
+  imageModelCapabilities,
+  resolveOpenAIImageModel,
 } = require('@librechat/api');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
 const { getFiles } = require('~/models');
@@ -48,6 +53,61 @@ function createAbortHandler() {
   };
 }
 
+/** Transparency needs an alpha channel, which JPEG lacks. */
+function resolveOutputFormat(background, imageOutputType) {
+  if (
+    background === 'transparent' &&
+    imageOutputType !== EImageOutputType.PNG &&
+    imageOutputType !== EImageOutputType.WEBP
+  ) {
+    logger.warn(
+      '[ImageGenOAI] Transparent background requires PNG or WebP format, defaulting to PNG',
+    );
+    return EImageOutputType.PNG;
+  }
+  return imageOutputType;
+}
+
+const isCompressed = (format) =>
+  format === EImageOutputType.WEBP || format === EImageOutputType.JPEG;
+
+const clampCount = (n) => Math.min(Math.max(1, Number(n) || 1), MAX_IMAGES_PER_CALL);
+
+const sizeRefusal = (size, problem) =>
+  returnValue(`The size "${size}" cannot be used: ${problem} Try again with a supported size.`);
+
+/**
+ * The tool result for every image the API returned: one attachment each, and the ids
+ * the agent can pass back to `image_edit_oai`.
+ * @param {Array<{ b64_json?: string }> | undefined} data
+ * @param {string} outputFormat
+ * @param {string[]} [referencedIds]
+ */
+function toImageResult(data, outputFormat, referencedIds) {
+  const images = (data ?? []).map((item) => item?.b64_json).filter(Boolean);
+  if (!images.length) {
+    return returnValue(
+      'No image data returned from OpenAI API. There may be a problem with the API or your configuration.',
+    );
+  }
+  const file_ids = images.map(() => v4());
+  const content = images.map((base64Image) => ({
+    type: ContentTypes.IMAGE_URL,
+    image_url: { url: `data:image/${outputFormat};base64,${base64Image}` },
+  }));
+  const idsText =
+    file_ids.length === 1
+      ? `generated_image_id: "${file_ids[0]}"`
+      : `generated_image_ids: ["${file_ids.join('", "')}"]`;
+  const referencedText = referencedIds?.length
+    ? `\nreferenced_image_ids: ["${referencedIds.join('", "')}"]`
+    : '';
+  const response = [
+    { type: ContentTypes.TEXT, text: `${displayMessage}\n\n${idsText}${referencedText}` },
+  ];
+  return [response, { content, file_ids }];
+}
+
 /**
  * Creates OpenAI Image tools (generation and editing)
  * @param {Object} fields - Configuration fields
@@ -82,7 +142,11 @@ function createOpenAIImageTools(fields = {}) {
   let apiKey = fields.IMAGE_GEN_OAI_API_KEY ?? getApiKey();
   const closureConfig = { apiKey };
 
-  const imageModel = process.env.IMAGE_GEN_OAI_MODEL || 'gpt-image-1';
+  const imageSettings = req?.config?.imageGeneration;
+  const imageModel = resolveOpenAIImageModel(imageSettings, process.env);
+  const moderation = imageSettings?.openai?.moderation;
+  /** Unrecognized models (e.g. Azure deployment names) keep the original, minimal edit request. */
+  const isGptImageModel = imageModelCapabilities(imageModel) != null;
 
   let baseURL = 'https://api.openai.com/v1/';
   if (!override && process.env.IMAGE_GEN_OAI_BASEURL) {
@@ -126,6 +190,10 @@ function createOpenAIImageTools(fields = {}) {
       if (!prompt) {
         throw new Error('Missing required field: prompt');
       }
+      const sizeProblem = checkImageSize(imageModel, size);
+      if (sizeProblem) {
+        return sizeRefusal(size, sizeProblem);
+      }
       const clientConfig = { ...closureConfig };
       const proxyDispatcher = getProxyDispatcher();
       if (proxyDispatcher) {
@@ -136,17 +204,7 @@ function createOpenAIImageTools(fields = {}) {
 
       /** @type {OpenAI} */
       const openai = new OpenAI(clientConfig);
-      let output_format = imageOutputType;
-      if (
-        background === 'transparent' &&
-        output_format !== EImageOutputType.PNG &&
-        output_format !== EImageOutputType.WEBP
-      ) {
-        logger.warn(
-          '[ImageGenOAI] Transparent background requires PNG or WebP format, defaulting to PNG',
-        );
-        output_format = EImageOutputType.PNG;
-      }
+      const output_format = resolveOutputFormat(background, imageOutputType);
 
       let resp;
       /** @type {AbortSignal} */
@@ -165,15 +223,13 @@ function createOpenAIImageTools(fields = {}) {
           {
             model: imageModel,
             prompt: replaceUnwantedChars(prompt),
-            n: Math.min(Math.max(1, n), 10),
+            n: clampCount(n),
             background,
             output_format,
-            output_compression:
-              output_format === EImageOutputType.WEBP || output_format === EImageOutputType.JPEG
-                ? output_compression
-                : undefined,
-            quality,
+            output_compression: isCompressed(output_format) ? output_compression : undefined,
+            quality: resolveImageQuality(imageModel, quality),
             size,
+            ...(moderation ? { moderation } : {}),
           },
           {
             signal: derivedSignal,
@@ -196,33 +252,8 @@ Error Message: ${error.message}`);
         );
       }
 
-      // For gpt-image-1, the response contains base64-encoded images
       // TODO: handle cost in `resp.usage`
-      const base64Image = resp.data[0].b64_json;
-
-      if (!base64Image) {
-        return returnValue(
-          'No image data returned from OpenAI API. There may be a problem with the API or your configuration.',
-        );
-      }
-
-      const content = [
-        {
-          type: ContentTypes.IMAGE_URL,
-          image_url: {
-            url: `data:image/${output_format};base64,${base64Image}`,
-          },
-        },
-      ];
-
-      const file_ids = [v4()];
-      const response = [
-        {
-          type: ContentTypes.TEXT,
-          text: displayMessage + `\n\ngenerated_image_id: "${file_ids[0]}"`,
-        },
-      ];
-      return [response, { content, file_ids }];
+      return toImageResult(resp.data, output_format);
     },
     oaiToolkit.image_gen_oai,
   );
@@ -231,9 +262,16 @@ Error Message: ${error.message}`);
    * Image Editing Tool
    */
   const imageEditTool = tool(
-    async ({ prompt, image_ids, quality = 'auto', size = 'auto' }, runnableConfig) => {
+    async (
+      { prompt, image_ids, background = 'auto', n = 1, quality = 'auto', size = 'auto' },
+      runnableConfig,
+    ) => {
       if (!prompt) {
         throw new Error('Missing required field: prompt');
+      }
+      const sizeProblem = checkImageSize(imageModel, size);
+      if (sizeProblem) {
+        return sizeRefusal(size, sizeProblem);
       }
 
       const clientConfig = { ...closureConfig };
@@ -244,14 +282,23 @@ Error Message: ${error.message}`);
         };
       }
 
+      const output_format = isGptImageModel
+        ? resolveOutputFormat(background, imageOutputType)
+        : EImageOutputType.PNG;
       const formData = new FormData();
       formData.append('model', imageModel);
       formData.append('prompt', replaceUnwantedChars(prompt));
       // TODO: `mask` support
-      // TODO: more than 1 image support
-      // formData.append('n', n.toString());
-      formData.append('quality', quality);
+      formData.append('quality', resolveImageQuality(imageModel, quality));
       formData.append('size', size);
+      if (isGptImageModel) {
+        formData.append('n', String(clampCount(n)));
+        formData.append('background', background);
+        formData.append('output_format', output_format);
+        if (moderation) {
+          formData.append('moderation', moderation);
+        }
+      }
 
       /** @type {Record<FileSources, undefined | NodeStreamDownloader<File>>} */
       const streamMethods = {};
@@ -363,38 +410,7 @@ Error Message: ${error.message}`);
         }
         const response = await axios.post('/images/edits', formData, axiosConfig);
 
-        if (!response.data || !response.data.data || !response.data.data.length) {
-          return returnValue(
-            'No image data returned from OpenAI API. There may be a problem with the API or your configuration.',
-          );
-        }
-
-        const base64Image = response.data.data[0].b64_json;
-        if (!base64Image) {
-          return returnValue(
-            'No image data returned from OpenAI API. There may be a problem with the API or your configuration.',
-          );
-        }
-
-        const content = [
-          {
-            type: ContentTypes.IMAGE_URL,
-            image_url: {
-              url: `data:image/${imageOutputType};base64,${base64Image}`,
-            },
-          },
-        ];
-
-        const file_ids = [v4()];
-        const textResponse = [
-          {
-            type: ContentTypes.TEXT,
-            text:
-              displayMessage +
-              `\n\ngenerated_image_id: "${file_ids[0]}"\nreferenced_image_ids: ["${image_ids.join('", "')}"]`,
-          },
-        ];
-        return [textResponse, { content, file_ids }];
+        return toImageResult(response.data?.data, output_format, image_ids);
       } catch (error) {
         const message = '[image_edit_oai] Problem editing the image:';
         logAxiosError({ error, message });

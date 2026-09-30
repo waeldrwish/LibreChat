@@ -41,6 +41,7 @@ export const ACTION_LABELS: Labels = {
   'tool.enabled': 'com_admin_audit_action_tool_enabled',
   'tool.disabled': 'com_admin_audit_action_tool_disabled',
   'tool.credentials_updated': 'com_admin_audit_action_tool_credentials_updated',
+  'tool.settings_updated': 'com_admin_audit_action_tool_settings_updated',
 } satisfies Record<AuditAction, TranslationKeys>;
 
 export const CATEGORY_LABELS: Labels = {
