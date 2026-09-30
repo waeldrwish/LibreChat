@@ -118,6 +118,29 @@ jest.mock('react-router-dom', () => ({
   }),
 }));
 
+const closedRegistration = {
+  ...mockStartupConfig,
+  data: { ...mockStartupConfig.data, registrationEnabled: false },
+};
+
+describe('when registration is closed', () => {
+  afterEach(() => window.history.pushState({}, '', '/'));
+
+  test('sends visitors to the login page', async () => {
+    window.history.pushState({}, '', '/register');
+    const { queryByRole } = setup({ useGetStartupConfigReturnValue: closedRegistration });
+    expect(queryByRole('form', { name: /Registration form/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(window.location.pathname).toBe('/login'));
+  });
+
+  test('still admits a user who follows an invite link', () => {
+    window.history.pushState({}, '', '/register?token=invite-token');
+    const { getByRole } = setup({ useGetStartupConfigReturnValue: closedRegistration });
+    expect(getByRole('form', { name: /Registration form/i })).toBeVisible();
+    expect(window.location.pathname).toBe('/register');
+  });
+});
+
 test('renders registration form', () => {
   const { getByText, getByTestId, getByRole } = setup();
   expect(getByText(/Create your account/i)).toBeInTheDocument();

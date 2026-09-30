@@ -2,8 +2,8 @@ import React, { useContext, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { loginPage } from 'librechat-data-provider';
 import { Turnstile } from '@marsidev/react-turnstile';
-import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { useRegisterUserMutation } from 'librechat-data-provider/react-query';
+import { Navigate, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { ThemeContext, SecretInput, Spinner, Button, Input, isDark } from '@librechat/client';
 import type { TRegisterUser, TError } from 'librechat-data-provider';
 import type { TLoginLayoutContext } from '~/common';
@@ -123,6 +123,11 @@ const Registration: React.FC = () => {
       </div>
     );
   };
+
+  /** Closed registration still admits invited users, whose link carries a token. */
+  if (startupConfig?.registrationEnabled === false && !token) {
+    return <Navigate to="/login" replace={true} />;
+  }
 
   return (
     <>
