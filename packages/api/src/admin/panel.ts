@@ -52,7 +52,7 @@ export interface AdminPanelDeps {
   resolveScope: AdminScopeResolver;
   /** The tenant-wide config (YAML merged with the base DB override), without principal overrides. */
   getTenantConfig: (tenantId?: string) => Promise<AppConfig>;
-  /** The provider catalog before any policy filter. */
+  /** The catalog of enabled providers, before any policy filter. */
   loadAvailableModels: (req: ServerRequest) => Promise<TModelsConfig>;
   listModelPolicies: () => Promise<ModelPolicyRecord[]>;
   countAdminUsers: () => Promise<{ total: number; disabled: number }>;

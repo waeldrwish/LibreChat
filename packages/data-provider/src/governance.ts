@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EModelEndpoint } from './schemas';
 
 /**
  * Governance: the organization-level policy layer an administrator manages from the
@@ -88,6 +89,18 @@ export function resolveGovernanceConfig(value: unknown): TGovernanceConfig {
 
 /** Matches every model of an endpoint when used as a policy's `model`. */
 export const ANY_MODEL = '*';
+
+const RESERVED_ENDPOINT_NAMES = new Set(
+  Object.values(EModelEndpoint).map((name) => name.toLowerCase()),
+);
+
+/**
+ * A managed provider cannot take a built-in endpoint's name in any casing: provider
+ * resolution falls back to a lowercase match, so `Anthropic` would route to the built-in.
+ */
+export function isReservedEndpointName(name: string): boolean {
+  return RESERVED_ENDPOINT_NAMES.has(name.trim().toLowerCase());
+}
 
 export const MODEL_GRANT_PRINCIPALS = ['user', 'group', 'role', 'agent'] as const;
 export type ModelGrantPrincipal = (typeof MODEL_GRANT_PRINCIPALS)[number];

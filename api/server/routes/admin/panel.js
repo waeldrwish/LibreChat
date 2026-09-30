@@ -5,7 +5,7 @@ const {
   requireCapability,
   getHeldCapabilities,
 } = require('~/server/middleware/roles/capabilities');
-const { loadAvailableModels } = require('~/server/controllers/ModelController');
+const { loadServedModels } = require('~/server/controllers/ModelController');
 const { invalidateConfigCaches } = require('~/server/services/Config');
 const { governance } = require('~/server/services/Governance');
 const { requireJwtAuth } = require('~/server/middleware');
@@ -26,7 +26,7 @@ const handlers = createAdminPanelHandlers({
   getHeldCapabilities,
   resolveScope,
   getTenantConfig,
-  loadAvailableModels,
+  loadAvailableModels: loadServedModels,
   listModelPolicies: db.listModelPolicies,
   countAdminUsers: db.countAdminUsers,
   countAdminAgents: db.countAdminAgents,

@@ -2,6 +2,7 @@ import { ANY_MODEL, modelKey, isEphemeralAgentId } from 'librechat-data-provider
 import type {
   TModelGrant,
   TModelsConfig,
+  TEndpointsConfig,
   TAccessSource,
   ModelAccessPolicy,
 } from 'librechat-data-provider';
@@ -176,6 +177,23 @@ type ModelAccessContext = {
 };
 
 type ModelsConfigWithAccess = TModelsConfig & { [MODEL_ACCESS_CONTEXT]?: ModelAccessContext };
+
+/**
+ * Keeps the providers the endpoints config enables. A built-in provider with no key, or one
+ * left out of `ENDPOINTS`, still lists default models that nobody can reach.
+ */
+export function servedModels(
+  modelsConfig: TModelsConfig,
+  endpointsConfig: TEndpointsConfig,
+): TModelsConfig {
+  const served: TModelsConfig = {};
+  for (const [endpoint, models] of Object.entries(modelsConfig)) {
+    if (endpointsConfig?.[endpoint]) {
+      served[endpoint] = models;
+    }
+  }
+  return served;
+}
 
 /** Removes the models `isAllowed` rejects, keeping the unfiltered catalog for agent delegation. */
 export function filterModelsConfig(

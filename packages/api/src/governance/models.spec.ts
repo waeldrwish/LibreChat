@@ -1,4 +1,5 @@
-import type { TModelGrant, TModelsConfig } from 'librechat-data-provider';
+import { EModelEndpoint } from 'librechat-data-provider';
+import type { TModelGrant, TModelsConfig, TEndpointsConfig } from 'librechat-data-provider';
 import type { ModelPolicyRecord } from '@librechat/data-schemas';
 import type { PrincipalSet } from './principals';
 import {
@@ -7,6 +8,7 @@ import {
   filterModelsConfig,
   indexModelPolicies,
   isAgentModelDelegated,
+  servedModels,
 } from './models';
 
 let seq = 0;
@@ -223,5 +225,24 @@ describe('capOutputTokens', () => {
     const custom: Record<string, unknown> = {};
     capOutputTokens(custom, 2048, 'OpenRouter');
     expect(custom).toEqual({ max_tokens: 2048 });
+  });
+});
+
+describe('servedModels', () => {
+  it('drops providers the endpoints config does not enable', () => {
+    const catalog: TModelsConfig = {
+      openAI: ['gpt-4o'],
+      anthropic: ['claude-sonnet'],
+      'OpenAI API': ['gpt-4o'],
+    };
+    const endpoints: TEndpointsConfig = {
+      agents: { order: 0 },
+      'OpenAI API': { order: 1, type: EModelEndpoint.custom },
+    };
+    expect(servedModels(catalog, endpoints)).toEqual({ 'OpenAI API': ['gpt-4o'] });
+  });
+
+  it('serves nothing when no endpoints config is available', () => {
+    expect(servedModels({ openAI: ['gpt-4o'] }, undefined)).toEqual({});
   });
 });

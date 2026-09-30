@@ -3,7 +3,7 @@ const { createAdminAccessHandlers } = require('@librechat/api');
 const { SystemCapabilities } = require('@librechat/data-schemas');
 const { AccessRoleIds, ResourceType } = require('librechat-data-provider');
 const { requireCapability, hasCapability } = require('~/server/middleware/roles/capabilities');
-const { loadAvailableModels } = require('~/server/controllers/ModelController');
+const { loadServedModels } = require('~/server/controllers/ModelController');
 const { grantPermission } = require('~/server/services/PermissionService');
 const { requireJwtAuth, configMiddleware } = require('~/server/middleware');
 const { governance } = require('~/server/services/Governance');
@@ -53,7 +53,7 @@ const handlers = createAdminAccessHandlers({
       : null;
   },
   getTenantConfig,
-  loadAvailableModels,
+  loadAvailableModels: loadServedModels,
   listModelPolicies: db.listModelPolicies,
   setPrincipalModelGrants: db.setPrincipalModelGrants,
   findUsageLimitsForPrincipals: db.findUsageLimitsForPrincipals,

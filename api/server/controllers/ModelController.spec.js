@@ -1,6 +1,7 @@
 const mockLoadDefaultModels = jest.fn();
 const mockLoadConfigModels = jest.fn();
 const mockGetAppConfig = jest.fn();
+const mockGetEndpointsConfig = jest.fn();
 const mockApplyModelAccess = jest.fn();
 
 jest.mock('@librechat/data-schemas', () => ({
@@ -11,12 +12,14 @@ jest.mock('@librechat/data-schemas', () => ({
 
 jest.mock('@librechat/api', () => ({
   getAppConfigOptionsFromUser: (user) => ({ userId: user?.id, role: user?.role }),
+  servedModels: (...args) => jest.requireActual('@librechat/api').servedModels(...args),
 }));
 
 jest.mock('~/server/services/Config', () => ({
   loadDefaultModels: (...args) => mockLoadDefaultModels(...args),
   loadConfigModels: (...args) => mockLoadConfigModels(...args),
   getAppConfig: (...args) => mockGetAppConfig(...args),
+  getEndpointsConfig: (...args) => mockGetEndpointsConfig(...args),
 }));
 
 jest.mock('~/server/services/Governance', () => ({
@@ -25,7 +28,7 @@ jest.mock('~/server/services/Governance', () => ({
   },
 }));
 
-const { loadModels, loadAvailableModels } = require('./ModelController');
+const { loadModels, loadServedModels, loadAvailableModels } = require('./ModelController');
 
 function deferred() {
   let resolve;
@@ -108,5 +111,19 @@ describe('loadModels', () => {
 
     await expect(loadAvailableModels(req)).resolves.toEqual({ openAI: ['gpt-4o'] });
     expect(mockApplyModelAccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadServedModels', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('keeps only the providers the endpoints config enables', async () => {
+    const req = { user: { id: 'admin-1' } };
+    mockLoadDefaultModels.mockResolvedValue({ openAI: ['gpt-4o'], anthropic: ['claude'] });
+    mockLoadConfigModels.mockResolvedValue({ 'OpenAI API': ['gpt-4o'] });
+    mockGetEndpointsConfig.mockResolvedValue({ agents: {}, 'OpenAI API': { type: 'custom' } });
+
+    await expect(loadServedModels(req)).resolves.toEqual({ 'OpenAI API': ['gpt-4o'] });
+    expect(mockGetEndpointsConfig).toHaveBeenCalledWith(req);
   });
 });

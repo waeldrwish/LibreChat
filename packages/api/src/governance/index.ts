@@ -11,6 +11,7 @@ export {
   filterModelsConfig,
   isAgentModelDelegated,
   isModelDelegatedToAgent,
+  servedModels,
 } from './models';
 export { toPrincipalSet, toPrincipalRefs } from './principals';
 export type {

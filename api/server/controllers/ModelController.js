@@ -1,6 +1,11 @@
 const { logger } = require('@librechat/data-schemas');
-const { getAppConfigOptionsFromUser } = require('@librechat/api');
-const { loadDefaultModels, loadConfigModels, getAppConfig } = require('~/server/services/Config');
+const { servedModels, getAppConfigOptionsFromUser } = require('@librechat/api');
+const {
+  getAppConfig,
+  loadConfigModels,
+  loadDefaultModels,
+  getEndpointsConfig,
+} = require('~/server/services/Config');
 const { governance } = require('~/server/services/Governance');
 
 const getModelsConfig = (req) => loadModels(req);
@@ -12,6 +17,15 @@ async function loadAvailableModels(req) {
     loadConfigModels(req),
   ]);
   return { ...defaultModelsConfig, ...customModelsConfig };
+}
+
+/** The catalog an administrator governs: only the providers the endpoints config enables. */
+async function loadServedModels(req) {
+  const [modelsConfig, endpointsConfig] = await Promise.all([
+    loadAvailableModels(req),
+    getEndpointsConfig(req),
+  ]);
+  return servedModels(modelsConfig, endpointsConfig);
 }
 
 /** The models the requesting user may use: the provider catalog filtered by admin policies. */
@@ -31,4 +45,10 @@ async function modelController(req, res) {
   }
 }
 
-module.exports = { modelController, loadModels, loadAvailableModels, getModelsConfig };
+module.exports = {
+  loadModels,
+  getModelsConfig,
+  modelController,
+  loadServedModels,
+  loadAvailableModels,
+};

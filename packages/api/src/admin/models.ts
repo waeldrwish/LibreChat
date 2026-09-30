@@ -8,6 +8,7 @@ import {
   MODEL_GRANT_EFFECTS,
   MODEL_POLICY_ACCESS,
   MODEL_GRANT_PRINCIPALS,
+  isReservedEndpointName,
   resolveGovernanceConfig,
 } from 'librechat-data-provider';
 import type {
@@ -43,7 +44,6 @@ import { toCapabilityUser } from './scope';
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const AGENT_ID = /^agent_[\w-]{1,200}$/;
 const CUSTOM_PATH = 'endpoints.custom';
-const RESERVED_ENDPOINTS = new Set(Object.values(EModelEndpoint).map((name) => name.toLowerCase()));
 
 const grantSchema = z
   .object({
@@ -90,7 +90,7 @@ const providerSchema = z.object({
     .trim()
     .min(1)
     .max(64)
-    .refine((name) => !RESERVED_ENDPOINTS.has(name.toLowerCase()), {
+    .refine((name) => !isReservedEndpointName(name), {
       message: 'Reserved endpoint name',
     }),
   baseURL: z.string().trim().min(1).max(2048),
@@ -117,7 +117,7 @@ const providersSchema = z
 type PolicyBody = z.infer<typeof createPolicySchema>;
 
 export interface AdminModelsDeps {
-  /** The provider catalog before any policy filter. */
+  /** The catalog of enabled providers, before any policy filter. */
   loadAvailableModels: (req: ServerRequest) => Promise<TModelsConfig>;
   getEndpointsConfig: (req: ServerRequest) => Promise<TEndpointsConfig>;
   /** The tenant-wide config (YAML merged with the base DB override). */

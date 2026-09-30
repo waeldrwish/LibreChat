@@ -11,18 +11,27 @@ import { useAdminFormat } from './format';
 export function Field({
   label,
   hint,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
+  error?: string;
   children: (id: string, describedBy?: string) => ReactNode;
 }) {
   const id = useId();
   const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = [error && errorId, hint && hintId].filter(Boolean).join(' ') || undefined;
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      {children(id, hint ? hintId : undefined)}
+      {children(id, describedBy)}
+      {error && (
+        <p id={errorId} role="alert" className="text-xs text-text-destructive">
+          {error}
+        </p>
+      )}
       {hint && (
         <p id={hintId} className="text-xs text-text-secondary">
           {hint}

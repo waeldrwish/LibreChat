@@ -61,6 +61,7 @@ export interface AdminAccessDeps {
   principalExists: (type: AccessPrincipalType, id: string) => Promise<boolean>;
   findGovernanceSubject: (userId: string) => Promise<GovernanceSubject | null>;
   getTenantConfig: (tenantId?: string) => Promise<AppConfig>;
+  /** The catalog of enabled providers, before any policy filter. */
   loadAvailableModels: (req: ServerRequest) => Promise<TModelsConfig>;
   listModelPolicies: GovernanceMethods['listModelPolicies'];
   setPrincipalModelGrants: GovernanceMethods['setPrincipalModelGrants'];

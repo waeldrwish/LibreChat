@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pencil, Plus, Server, Trash2 } from 'lucide-react';
+import { isReservedEndpointName } from 'librechat-data-provider';
 import {
   Input,
   Label,
@@ -12,6 +13,7 @@ import {
   OGDialogTemplate,
 } from '@librechat/client';
 import type { TManagedProvider, TProviders } from 'librechat-data-provider';
+import type { TranslationKeys } from '~/hooks';
 import {
   Empty,
   Panel,
@@ -27,6 +29,23 @@ import { useAdminFormat } from '../common/format';
 import { useLocalize } from '~/hooks';
 
 const NAME = /^[\w .-]{1,64}$/;
+
+/** Why a new provider cannot take `name`, checked before the server refuses it. */
+function nameProblem(name: string, takenNames: Set<string>): TranslationKeys | undefined {
+  if (!name) {
+    return undefined;
+  }
+  if (isReservedEndpointName(name)) {
+    return 'com_admin_provider_name_reserved';
+  }
+  if (takenNames.has(name.toLowerCase())) {
+    return 'com_admin_provider_name_taken';
+  }
+  if (!NAME.test(name)) {
+    return 'com_admin_provider_name_invalid';
+  }
+  return undefined;
+}
 
 type Draft = {
   name: string;
@@ -85,9 +104,11 @@ function ProviderDialog({
   onOpenChange,
   onSave,
   isSaving,
+  takenNames,
 }: {
   open: boolean;
   provider?: TManagedProvider;
+  takenNames: Set<string>;
   onOpenChange: (open: boolean) => void;
   onSave: (provider: TManagedProvider) => void;
   isSaving: boolean;
@@ -96,7 +117,9 @@ function ProviderDialog({
   const [draft, setDraft] = useState<Draft>(() => toDraft(provider));
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
-  const nameValid = NAME.test(draft.name.trim());
+  const name = draft.name.trim();
+  const problem = provider ? undefined : nameProblem(name, takenNames);
+  const nameValid = NAME.test(name) && problem == null;
   const valid =
     nameValid &&
     /^https?:\/\//i.test(draft.baseURL.trim()) &&
@@ -114,12 +137,14 @@ function ProviderDialog({
             <Field
               label={localize('com_admin_field_name')}
               hint={localize('com_admin_provider_name_hint')}
+              error={problem && localize(problem, { 0: name })}
             >
               {(id, describedBy) => (
                 <Input
                   id={id}
                   dir="ltr"
                   disabled={provider != null}
+                  aria-invalid={problem != null}
                   aria-describedby={describedBy}
                   value={draft.name}
                   onChange={(e) => set('name', e.target.value)}
@@ -239,6 +264,11 @@ function Providers({ data }: { data: TProviders }) {
       onError: notify.error,
     });
 
+  const takenNames = new Set(
+    [...data.managed, ...data.configured].map((provider) => provider.name.toLowerCase()),
+  );
+  const servedBuiltIn = data.builtIn.filter((provider) => provider.enabled);
+
   const upsert = (provider: TManagedProvider) => {
     const others = data.managed.filter((item) => item.name !== provider.name).map(toWrite);
     persist([...others, provider], () => setEditing(null));
@@ -313,37 +343,34 @@ function Providers({ data }: { data: TProviders }) {
         )}
       </Panel>
 
-      <Panel>
-        <SectionTitle>{localize('com_admin_providers_builtin')}</SectionTitle>
-        <p className="mb-3 text-sm text-text-secondary">
-          {localize('com_admin_providers_builtin_description')}
-        </p>
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {data.builtIn.map((provider) => (
-            <li
-              key={provider.name}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border-light px-3 py-2"
-            >
-              <div className="min-w-0">
-                <span className="block text-sm font-medium" dir="ltr">
-                  {provider.name}
-                </span>
-                <span className="text-xs text-text-secondary">
-                  {provider.userProvide
-                    ? localize('com_admin_provider_user_key')
-                    : localize('com_admin_models_count', { 0: format.number(provider.models) })}
-                </span>
-              </div>
-              <StatusBadge
-                active={provider.enabled}
-                label={localize(
-                  provider.enabled ? 'com_admin_enabled' : 'com_admin_not_configured',
-                )}
-              />
-            </li>
-          ))}
-        </ul>
-      </Panel>
+      {servedBuiltIn.length > 0 && (
+        <Panel>
+          <SectionTitle>{localize('com_admin_providers_builtin')}</SectionTitle>
+          <p className="mb-3 text-sm text-text-secondary">
+            {localize('com_admin_providers_builtin_description')}
+          </p>
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {servedBuiltIn.map((provider) => (
+              <li
+                key={provider.name}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border-light px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <span className="block text-sm font-medium" dir="ltr">
+                    {provider.name}
+                  </span>
+                  <span className="text-xs text-text-secondary">
+                    {provider.userProvide
+                      ? localize('com_admin_provider_user_key')
+                      : localize('com_admin_models_count', { 0: format.number(provider.models) })}
+                  </span>
+                </div>
+                <StatusBadge active={true} label={localize('com_admin_enabled')} />
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       {data.configured.length > 0 && (
         <Panel>
@@ -377,6 +404,7 @@ function Providers({ data }: { data: TProviders }) {
           isSaving={save.isLoading}
           onOpenChange={(open) => !open && setEditing(null)}
           onSave={upsert}
+          takenNames={takenNames}
         />
       )}
       <ConfirmDialog
