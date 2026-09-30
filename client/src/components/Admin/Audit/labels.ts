@@ -38,6 +38,9 @@ export const ACTION_LABELS: Labels = {
   'agent.deleted': 'com_admin_audit_action_agent_deleted',
   'usage.limits_updated': 'com_admin_audit_action_usage_limits_updated',
   'usage.limit_exceeded': 'com_admin_audit_action_usage_limit_exceeded',
+  'tool.enabled': 'com_admin_audit_action_tool_enabled',
+  'tool.disabled': 'com_admin_audit_action_tool_disabled',
+  'tool.credentials_updated': 'com_admin_audit_action_tool_credentials_updated',
 } satisfies Record<AuditAction, TranslationKeys>;
 
 export const CATEGORY_LABELS: Labels = {
@@ -55,6 +58,7 @@ export const CATEGORY_LABELS: Labels = {
   model: 'com_admin_audit_category_model',
   agent: 'com_admin_audit_category_agent',
   usage: 'com_admin_audit_category_usage',
+  tool: 'com_admin_audit_category_tool',
 } satisfies Record<AuditCategory, TranslationKeys>;
 
 export const OUTCOME_LABELS: Labels = {

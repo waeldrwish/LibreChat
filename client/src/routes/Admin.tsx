@@ -23,6 +23,8 @@ const adminRoutes: RouteObject = {
     { path: 'models', lazy: page('ModelsPage') },
     { path: 'providers', lazy: page('ProvidersPage') },
     { path: 'agents', lazy: page('AgentsPage') },
+    { path: 'mcp', lazy: page('MCPServersPage') },
+    { path: 'tools', lazy: page('ToolsPage') },
     { path: 'usage', lazy: page('UsagePage') },
     { path: 'limits', lazy: page('LimitsPage') },
     { path: 'audit', lazy: page('AuditLogPage') },

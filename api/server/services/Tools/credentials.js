@@ -1,5 +1,8 @@
 const { AuthType } = require('librechat-data-provider');
+const { withSystemToolCredentials } = require('@librechat/api');
 const { getUserPluginAuthValue } = require('~/server/services/PluginService');
+
+const getToolAuthValue = withSystemToolCredentials(getUserPluginAuthValue);
 
 /**
  *
@@ -33,7 +36,7 @@ const loadAuthValues = async ({
       }
       let value;
       try {
-        value = await getUserPluginAuthValue(userId, field, throwError);
+        value = await getToolAuthValue(userId, field, throwError);
       } catch (err) {
         const isOptional = optional && optional.has(field);
         const isMissingOptional = isOptional && err?.code === 'PLUGIN_AUTH_NOT_FOUND';

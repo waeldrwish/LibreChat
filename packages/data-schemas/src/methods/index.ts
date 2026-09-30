@@ -194,6 +194,9 @@ export type {
   AdminUserRecord,
   AdminAgentFilter,
   AdminAgentRecord,
+  SharingSummary,
+  AdminMCPServerFilter,
+  AdminMCPServerRecord,
 } from './directory';
 
 export {

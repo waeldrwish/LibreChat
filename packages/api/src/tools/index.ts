@@ -1,4 +1,6 @@
 export * from './format';
+export * from './credentials';
+export * from './availability';
 export * from './discovery';
 export * from './protection';
 export * from './registry';

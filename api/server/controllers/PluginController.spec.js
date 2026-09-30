@@ -17,6 +17,10 @@ jest.mock('~/server/services/Config', () => ({
   setCachedTools: jest.fn(),
 }));
 
+jest.mock('~/models', () => ({
+  findPluginAuthsByKeys: jest.fn().mockResolvedValue([]),
+}));
+
 jest.mock('~/app/clients/tools', () => ({
   availableTools: [],
   toolkits: [],

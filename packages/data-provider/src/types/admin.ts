@@ -30,6 +30,7 @@ export const AUDIT_CATEGORIES = [
   'model',
   'agent',
   'usage',
+  'tool',
 ] as const;
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
 
@@ -72,6 +73,9 @@ export const AUDIT_ACTIONS = [
   'agent.deleted',
   'usage.limits_updated',
   'usage.limit_exceeded',
+  'tool.enabled',
+  'tool.disabled',
+  'tool.credentials_updated',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -109,6 +113,9 @@ export const AUDIT_ACTION_CATEGORY: Record<AuditAction, AuditCategory> = {
   'agent.deleted': 'agent',
   'usage.limits_updated': 'usage',
   'usage.limit_exceeded': 'usage',
+  'tool.enabled': 'tool',
+  'tool.disabled': 'tool',
+  'tool.credentials_updated': 'tool',
 };
 
 /** Result of the audited operation. Kept first-class instead of being encoded
@@ -470,6 +477,77 @@ export type TAdminAgentsParams = {
 };
 
 export type TAdminAgentsPage = TAdminPage<'agents', TAdminAgent>;
+
+/* ── MCP servers ────────────────────────────────────────────────────── */
+
+/** An MCP server stored in the database, whoever created it. */
+export type TAdminMCPServer = {
+  dbId: string;
+  serverName: string;
+  title?: string;
+  description?: string;
+  /** Transport: `sse`, `streamable-http`, `websocket`… */
+  transport?: string;
+  url?: string;
+  authorId?: string;
+  authorName?: string;
+  sharedWith: number;
+  isPublic: boolean;
+  updatedAt?: string;
+};
+
+/** An MCP server defined in `librechat.yaml` (read-only here). */
+export type TConfiguredMCPServer = {
+  serverName: string;
+  title?: string;
+  description?: string;
+  transport?: string;
+  url?: string;
+};
+
+export type TAdminMCPServersParams = { search?: string; limit?: number; offset?: number };
+
+export type TAdminMCPServersPage = TAdminPage<'servers', TAdminMCPServer> & {
+  configured: TConfiguredMCPServer[];
+};
+
+/* ── Tools (plugins) ────────────────────────────────────────────────── */
+
+/**
+ * Where a tool credential comes from: the server environment, a key the
+ * administrator stored, each user's own key, or nowhere yet.
+ */
+export type TToolCredentialSource = 'env' | 'system' | 'user' | 'missing';
+
+export type TAdminToolCredential = {
+  /** The stored field name (the first of any `A||B` alternates). */
+  field: string;
+  label: string;
+  description?: string;
+  optional: boolean;
+  source: TToolCredentialSource;
+};
+
+export type TAdminTool = {
+  key: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  enabled: boolean;
+  credentials: TAdminToolCredential[];
+};
+
+export type TAdminTools = {
+  tools: TAdminTool[];
+  /** Whether the viewer may change tools. */
+  canManage: boolean;
+};
+
+export type TAdminToolUpdate = {
+  enabled?: boolean;
+  /** Field → new key; `null` removes the stored key. */
+  credentials?: Record<string, string | null>;
+};
 
 /* ── Usage ──────────────────────────────────────────────────────────── */
 

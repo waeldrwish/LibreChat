@@ -5,13 +5,24 @@ jest.mock('~/server/services/PluginService', () => ({
 }));
 
 const { getUserPluginAuthValue } = require('~/server/services/PluginService');
+const { SYSTEM_TOOL_CREDENTIALS_OWNER } = require('@librechat/api');
 const { loadAuthValues } = require('./credentials');
+
+/** Keys an administrator stored, answered the way the real lookup answers `throwError: false`. */
+const systemKeys = new Map();
+const userLookup = jest.fn();
 
 describe('loadAuthValues', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     jest.resetAllMocks();
+    systemKeys.clear();
+    getUserPluginAuthValue.mockImplementation((userId, ...rest) =>
+      userId === SYSTEM_TOOL_CREDENTIALS_OWNER
+        ? Promise.resolve(systemKeys.get(rest[0]) ?? null)
+        : userLookup(userId, ...rest),
+    );
     process.env = { ...originalEnv };
   });
 
@@ -32,21 +43,21 @@ describe('loadAuthValues', () => {
 
   it('should skip user_provided sentinel and try user DB value', async () => {
     process.env.GOOGLE_KEY = AuthType.USER_PROVIDED;
-    getUserPluginAuthValue.mockResolvedValue('user-stored-key');
+    userLookup.mockResolvedValue('user-stored-key');
 
     const result = await loadAuthValues({
       userId: 'user1',
       authFields: ['GOOGLE_KEY'],
     });
 
-    expect(getUserPluginAuthValue).toHaveBeenCalledWith('user1', 'GOOGLE_KEY', true);
+    expect(userLookup).toHaveBeenCalledWith('user1', 'GOOGLE_KEY', true);
     expect(result).toEqual({ GOOGLE_KEY: 'user-stored-key' });
   });
 
   it('should skip user_provided and continue to next field in fallback chain', async () => {
     process.env.GOOGLE_KEY = AuthType.USER_PROVIDED;
     process.env.GOOGLE_SERVICE_KEY_FILE = '/path/to/service-account.json';
-    getUserPluginAuthValue.mockRejectedValue(new Error('No auth found'));
+    userLookup.mockRejectedValue(new Error('No auth found'));
 
     const result = await loadAuthValues({
       userId: 'user1',
@@ -71,7 +82,7 @@ describe('loadAuthValues', () => {
 
   it('should not return user_provided as an auth value', async () => {
     process.env.GOOGLE_KEY = AuthType.USER_PROVIDED;
-    getUserPluginAuthValue.mockResolvedValue(null);
+    userLookup.mockResolvedValue(null);
 
     const result = await loadAuthValues({
       userId: 'user1',
@@ -91,7 +102,7 @@ describe('loadAuthValues', () => {
     });
 
     expect(result).toEqual({ MY_KEY: 'valid-key' });
-    expect(getUserPluginAuthValue).not.toHaveBeenCalled();
+    expect(userLookup).not.toHaveBeenCalled();
   });
 
   it('should load independent authentication fields in parallel', async () => {
@@ -101,7 +112,7 @@ describe('loadAuthValues', () => {
     const firstValue = new Promise((resolve) => {
       resolveFirst = resolve;
     });
-    getUserPluginAuthValue.mockImplementation((_userId, field) => {
+    userLookup.mockImplementation((_userId, field) => {
       if (field === 'FIRST_KEY') {
         return firstValue;
       }
@@ -113,7 +124,7 @@ describe('loadAuthValues', () => {
       authFields: ['FIRST_KEY', 'SECOND_KEY'],
     });
     await Promise.resolve();
-    const callCountBeforeFirstResolved = getUserPluginAuthValue.mock.calls.length;
+    const callCountBeforeFirstResolved = userLookup.mock.calls.length;
     resolveFirst('first-value');
 
     await expect(resultPromise).resolves.toEqual({
@@ -137,7 +148,7 @@ describe('loadAuthValues', () => {
 
   it('should return undefined for optional field when sentinel is filtered and DB throws', async () => {
     process.env.GOOGLE_KEY = AuthType.USER_PROVIDED;
-    getUserPluginAuthValue.mockRejectedValue(new Error('No auth found'));
+    userLookup.mockRejectedValue(new Error('No auth found'));
 
     const optional = new Set(['GOOGLE_KEY']);
     const result = await loadAuthValues({
@@ -154,7 +165,7 @@ describe('loadAuthValues', () => {
     const missingError = Object.assign(new Error('No auth found'), {
       code: 'PLUGIN_AUTH_NOT_FOUND',
     });
-    getUserPluginAuthValue.mockRejectedValueOnce(missingError);
+    userLookup.mockRejectedValueOnce(missingError);
 
     await expect(
       loadAuthValues({
@@ -165,7 +176,7 @@ describe('loadAuthValues', () => {
       }),
     ).resolves.toEqual({ KEENABLE_API_URL: undefined });
 
-    getUserPluginAuthValue.mockRejectedValueOnce(new Error('Database unavailable'));
+    userLookup.mockRejectedValueOnce(new Error('Database unavailable'));
 
     await expect(
       loadAuthValues({
@@ -179,7 +190,7 @@ describe('loadAuthValues', () => {
 
   it('should not leak sentinel through catch path when DB lookup throws', async () => {
     process.env.GOOGLE_KEY = AuthType.USER_PROVIDED;
-    getUserPluginAuthValue.mockRejectedValue(new Error('No auth found'));
+    userLookup.mockRejectedValue(new Error('No auth found'));
 
     await expect(
       loadAuthValues({
@@ -187,5 +198,25 @@ describe('loadAuthValues', () => {
         authFields: ['GOOGLE_KEY'],
       }),
     ).rejects.toThrow('No auth found');
+  });
+
+  it('uses a key the administrator stored before the user own key', async () => {
+    process.env.TAVILY_API_KEY = AuthType.USER_PROVIDED;
+    systemKeys.set('TAVILY_API_KEY', 'org-key');
+
+    const result = await loadAuthValues({ userId: 'user1', authFields: ['TAVILY_API_KEY'] });
+
+    expect(result).toEqual({ TAVILY_API_KEY: 'org-key' });
+    expect(userLookup).not.toHaveBeenCalled();
+  });
+
+  it('keeps the server environment ahead of a stored key', async () => {
+    process.env.TAVILY_API_KEY = 'env-key';
+    systemKeys.set('TAVILY_API_KEY', 'org-key');
+
+    const result = await loadAuthValues({ userId: 'user1', authFields: ['TAVILY_API_KEY'] });
+
+    expect(result).toEqual({ TAVILY_API_KEY: 'env-key' });
+    expect(getUserPluginAuthValue).not.toHaveBeenCalled();
   });
 });

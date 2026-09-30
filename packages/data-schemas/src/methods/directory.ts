@@ -1,6 +1,6 @@
 import { PermissionBits, PrincipalType, ResourceType } from 'librechat-data-provider';
 import type { Model } from 'mongoose';
-import type { IUser, IGroup, IAgent, IAclEntry } from '~/types';
+import type { IUser, IGroup, IAgent, IAclEntry, MCPServerDocument } from '~/types';
 import { escapeRegExp } from '~/utils/string';
 
 /** Bits an agent owner holds; anything less is a share. */
@@ -63,6 +63,23 @@ export type AdminAgentFilter = {
   offset: number;
 };
 
+/** An MCP server stored in the database, with its author's display name. */
+export type AdminMCPServerRecord = {
+  _id: string;
+  serverName: string;
+  title?: string;
+  description?: string;
+  transport?: string;
+  url?: string;
+  author?: string;
+  authorName?: string;
+  updatedAt?: Date;
+};
+
+export type AdminMCPServerFilter = { search?: string; limit: number; offset: number };
+
+export type SharingSummary = { sharedWith: number; isPublic: boolean };
+
 export type GroupSummary = { id: string; name: string };
 
 /** An agent reference with the permission bits a principal holds on it. */
@@ -95,9 +112,11 @@ export function createDirectoryMethods(mongoose: typeof import('mongoose')): {
   countAdminAgents: () => Promise<{ total: number; disabled: number }>;
   setAgentDisabled: (agentId: string, disabled: boolean) => Promise<AdminAgentRecord | null>;
   isAgentDisabled: (agentId: string) => Promise<boolean>;
-  summarizeAgentSharing: (
-    objectIds: string[],
-  ) => Promise<Map<string, { sharedWith: number; isPublic: boolean }>>;
+  summarizeAgentSharing: (objectIds: string[]) => Promise<Map<string, SharingSummary>>;
+  listAdminMCPServers: (
+    filter: AdminMCPServerFilter,
+  ) => Promise<{ servers: AdminMCPServerRecord[]; total: number }>;
+  summarizeMCPServerSharing: (objectIds: string[]) => Promise<Map<string, SharingSummary>>;
   listPrincipalAgentAccess: (
     principalType: 'user' | 'group' | 'role',
     principalId: string,
@@ -303,11 +322,11 @@ export function createDirectoryMethods(mongoose: typeof import('mongoose')): {
   }
 
   /**
-   * Per agent: how many principals it is shared with beyond its owners, and
+   * Per resource: how many principals it is shared with beyond its owners, and
    * whether it is public.
    */
-  async function summarizeAgentSharing(objectIds: string[]) {
-    const summary = new Map<string, { sharedWith: number; isPublic: boolean }>();
+  async function summarizeSharing(resourceType: ResourceType, objectIds: string[]) {
+    const summary = new Map<string, SharingSummary>();
     if (objectIds.length === 0) {
       return summary;
     }
@@ -315,7 +334,7 @@ export function createDirectoryMethods(mongoose: typeof import('mongoose')): {
     const rows = await AclEntry.aggregate<{ _id: unknown; sharedWith: number; isPublic: number }>([
       {
         $match: {
-          resourceType: ResourceType.AGENT,
+          resourceType,
           resourceId: { $in: toObjectIds(objectIds) },
         },
       },
@@ -346,6 +365,70 @@ export function createDirectoryMethods(mongoose: typeof import('mongoose')): {
       summary.set(String(row._id), { sharedWith: row.sharedWith, isPublic: row.isPublic === 1 });
     }
     return summary;
+  }
+
+  const summarizeAgentSharing = (objectIds: string[]) =>
+    summarizeSharing(ResourceType.AGENT, objectIds);
+
+  const summarizeMCPServerSharing = (objectIds: string[]) =>
+    summarizeSharing(ResourceType.MCPSERVER, objectIds);
+
+  /** Every stored MCP server in the tenant, newest first, whoever created it. */
+  async function listAdminMCPServers(filter: AdminMCPServerFilter) {
+    const MCPServer = mongoose.models.MCPServer as Model<MCPServerDocument>;
+    const query: Record<string, unknown> = {};
+    const regex = searchRegex(filter.search);
+    if (regex) {
+      query.$or = [
+        { serverName: regex },
+        { 'config.title': regex },
+        { 'config.description': regex },
+      ];
+    }
+    const [docs, total] = await Promise.all([
+      MCPServer.find(
+        query,
+        '_id serverName config.title config.description config.type config.url author updatedAt',
+      )
+        .sort({ updatedAt: -1, _id: 1 })
+        .skip(filter.offset)
+        .limit(filter.limit)
+        .lean<
+          Array<
+            LeanId & {
+              serverName: string;
+              config?: { title?: string; description?: string; type?: string; url?: string };
+              author?: { toString(): string };
+              updatedAt?: Date;
+            }
+          >
+        >(),
+      MCPServer.countDocuments(query),
+    ]);
+    const authorIds = [...new Set(docs.map((doc) => doc.author?.toString()).filter(Boolean))];
+    const authors = authorIds.length
+      ? await User()
+          .find({ _id: { $in: toObjectIds(authorIds as string[]) } }, '_id name email')
+          .lean<Array<LeanId & Pick<IUser, 'name' | 'email'>>>()
+      : [];
+    const authorNames = new Map(
+      authors.map((author) => [author._id.toString(), author.name || author.email]),
+    );
+    const servers = docs.map((doc) => {
+      const author = doc.author?.toString();
+      return {
+        _id: doc._id.toString(),
+        serverName: doc.serverName,
+        title: doc.config?.title,
+        description: doc.config?.description,
+        transport: doc.config?.type,
+        url: doc.config?.url,
+        author,
+        authorName: author ? authorNames.get(author) : undefined,
+        updatedAt: doc.updatedAt,
+      };
+    });
+    return { servers, total };
   }
 
   /** Agents shared directly with one principal, with the bits of that share. */
@@ -415,6 +498,8 @@ export function createDirectoryMethods(mongoose: typeof import('mongoose')): {
     setAgentDisabled,
     isAgentDisabled,
     summarizeAgentSharing,
+    listAdminMCPServers,
+    summarizeMCPServerSharing,
     listPrincipalAgentAccess,
     findAgentRefs,
     findAgentNames,

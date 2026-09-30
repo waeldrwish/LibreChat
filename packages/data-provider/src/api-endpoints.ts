@@ -660,6 +660,12 @@ export const adminAgents = (params: Record<string, unknown> = {}) =>
   `${admin()}/agents${buildQuery(params)}`;
 export const adminAgentStatus = (id: string) => `${adminId(`${admin()}/agents`, id)}/status`;
 
+export const adminMCPServers = (params: Record<string, unknown> = {}) =>
+  `${admin()}/mcp${buildQuery(params)}`;
+
+export const adminTools = () => `${admin()}/tools`;
+export const adminTool = (key: string) => adminId(adminTools(), key);
+
 export const adminAccess = (principalType: string, principalId: string) =>
   adminId(adminId(`${admin()}/access`, principalType), principalId);
 export const adminLimits = () => `${admin()}/access/limits`;

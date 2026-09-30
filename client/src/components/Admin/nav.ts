@@ -1,8 +1,10 @@
 import {
   Bot,
   Cpu,
+  Plug,
   Gauge,
   Users,
+  Puzzle,
   Server,
   Settings,
   UsersRound,
@@ -72,6 +74,13 @@ export const ADMIN_NAV: AdminNavSection[] = [
         anyOf: [Cap.READ_MODELS],
       },
       { path: 'agents', labelKey: 'com_admin_nav_agents', icon: Bot, anyOf: [Cap.READ_AGENTS] },
+      {
+        path: 'mcp',
+        labelKey: 'com_admin_nav_mcp',
+        icon: Plug,
+        anyOf: [Cap.MANAGE_MCP_SERVERS],
+      },
+      { path: 'tools', labelKey: 'com_admin_nav_tools', icon: Puzzle, anyOf: [Cap.READ_CONFIGS] },
     ],
   },
   {

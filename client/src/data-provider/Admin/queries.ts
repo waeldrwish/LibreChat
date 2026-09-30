@@ -12,6 +12,9 @@ import type {
   TAdminUsersPage,
   TAdminRolesPage,
   TAdminAgentsPage,
+  TAdminTools,
+  TAdminMCPServersPage,
+  TAdminMCPServersParams,
   TAdminGroupsPage,
   TAdminGroupRecord,
   TEffectiveAccess,
@@ -175,6 +178,22 @@ export const useAdminAgentsQuery = (
     () => dataService.listAdminAgents(params),
     { ...defaults, keepPreviousData: true, enabled },
   );
+
+export const useAdminMCPServersQuery = (
+  params: TAdminMCPServersParams,
+  enabled = true,
+): UseQueryResult<TAdminMCPServersPage> =>
+  useQuery<TAdminMCPServersPage>(
+    [QueryKeys.adminMCPServers, params],
+    () => dataService.listAdminMCPServers(params),
+    { ...defaults, keepPreviousData: true, enabled },
+  );
+
+export const useAdminToolsQuery = (enabled = true): UseQueryResult<TAdminTools> =>
+  useQuery<TAdminTools>([QueryKeys.adminTools], () => dataService.getAdminTools(), {
+    ...defaults,
+    enabled,
+  });
 
 /** Tools an agent can be given (plugins and MCP tools), fetched without the chat shell's gate. */
 export const useAdminAgentToolsQuery = (enabled = true): UseQueryResult<TPlugin[]> =>

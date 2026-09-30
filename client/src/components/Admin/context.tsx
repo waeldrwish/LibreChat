@@ -17,6 +17,7 @@ export const Cap = {
   READ_USAGE: 'read:usage',
   READ_AGENTS: 'read:agents',
   MANAGE_AGENTS: 'manage:agents',
+  MANAGE_MCP_SERVERS: 'manage:mcpservers',
   READ_MODELS: 'read:models',
   MANAGE_MODELS: 'manage:models',
   MANAGE_LIMITS: 'manage:limits',

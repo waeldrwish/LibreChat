@@ -23,9 +23,10 @@ export const filterUniquePlugins = (plugins?: TPlugin[]): TPlugin[] => {
  * Supports alternate authentication fields, allowing validation against multiple possible environment variables.
  *
  * @param plugin The plugin object containing the authentication configuration.
+ * @param systemFields Fields an administrator stored a key for, which count as configured.
  * @returns True if the plugin is authenticated for all required fields, false otherwise.
  */
-export const checkPluginAuth = (plugin?: TPlugin): boolean => {
+export const checkPluginAuth = (plugin?: TPlugin, systemFields?: ReadonlySet<string>): boolean => {
   if (!plugin?.authConfig || plugin.authConfig.length === 0) {
     return false;
   }
@@ -41,6 +42,10 @@ export const checkPluginAuth = (plugin?: TPlugin): boolean => {
     for (const fieldOption of authFieldOptions) {
       const envValue = process.env[fieldOption];
       if (envValue && envValue.trim() !== '' && envValue !== AuthType.USER_PROVIDED) {
+        isFieldAuthenticated = true;
+        break;
+      }
+      if (systemFields?.has(fieldOption)) {
         isFieldAuthenticated = true;
         break;
       }

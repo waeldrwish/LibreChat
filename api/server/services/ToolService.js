@@ -9,6 +9,7 @@ const {
 const {
   sendEvent,
   getToolkitKey,
+  isToolEnabled,
   getUserMCPAuthMap,
   createAuthIdentityContext,
   selectMCPUpstreamTokenProvider,
@@ -891,7 +892,7 @@ async function loadToolDefinitionsWrapper({
     if (!areToolsEnabled) {
       return false;
     }
-    return true;
+    return isToolEnabled(appConfig, getToolkitKey({ toolkits, toolName: tool }) ?? tool);
   });
 
   if (!filteredTools || filteredTools.length === 0) {
@@ -1694,7 +1695,7 @@ async function loadAgentTools({
     } else if (!areToolsEnabled) {
       return false;
     }
-    return true;
+    return isToolEnabled(req.config, getToolkitKey({ toolkits, toolName: tool }) ?? tool);
   });
 
   if (!_agentTools || _agentTools.length === 0) {

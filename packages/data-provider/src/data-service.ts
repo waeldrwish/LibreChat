@@ -1870,6 +1870,23 @@ export function setAdminAgentStatus(
   return request.patch(endpoints.adminAgentStatus(id), { disabled });
 }
 
+export function listAdminMCPServers(
+  params: adm.TAdminMCPServersParams,
+): Promise<adm.TAdminMCPServersPage> {
+  return request.get(endpoints.adminMCPServers(params));
+}
+
+export function getAdminTools(): Promise<adm.TAdminTools> {
+  return request.get(endpoints.adminTools());
+}
+
+export function updateAdminTool(
+  key: string,
+  update: adm.TAdminToolUpdate,
+): Promise<{ tool: adm.TAdminTool }> {
+  return request.patch(endpoints.adminTool(key), update);
+}
+
 export function getAdminAccess(
   principalType: string,
   principalId: string,

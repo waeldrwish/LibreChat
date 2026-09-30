@@ -9,6 +9,8 @@ export { default as RoleDetailPage } from './Roles/RoleDetailPage';
 export { default as ModelsPage } from './Models/ModelsPage';
 export { default as ProvidersPage } from './Models/ProvidersPage';
 export { default as AgentsPage } from './Agents/AgentsPage';
+export { default as MCPServersPage } from './MCP/MCPServersPage';
+export { default as ToolsPage } from './Tools/ToolsPage';
 export { default as UsagePage } from './Usage/UsagePage';
 export { default as LimitsPage } from './Usage/LimitsPage';
 export { default as AuditLogPage } from './Audit/AuditLogPage';

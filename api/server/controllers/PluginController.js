@@ -1,8 +1,15 @@
 const { logger } = require('@librechat/data-schemas');
-const { getToolkitKey, checkPluginAuth, filterUniquePlugins } = require('@librechat/api');
+const {
+  getToolkitKey,
+  isToolEnabled,
+  checkPluginAuth,
+  filterUniquePlugins,
+  findSystemToolFields,
+} = require('@librechat/api');
 const { getCachedTools, setCachedTools } = require('~/server/services/Config');
 const { availableTools, toolkits } = require('~/app/clients/tools');
 const { getAppConfig } = require('~/server/services/Config');
+const { findPluginAuthsByKeys } = require('~/models');
 
 const getAvailablePluginsController = async (req, res) => {
   try {
@@ -13,13 +20,12 @@ const getAvailablePluginsController = async (req, res) => {
         userId: req.user?.id,
         tenantId: req.user?.tenantId,
       }));
-    const { filteredTools = [], includedTools = [] } = appConfig;
-
     const uniquePlugins = filterUniquePlugins(availableTools);
-    const includeSet = new Set(includedTools);
-    const filterSet = new Set(filteredTools);
+    const systemFields = await findSystemToolFields(
+      findPluginAuthsByKeys,
+      uniquePlugins.map((plugin) => plugin.pluginKey),
+    );
 
-    /** includedTools takes precedence — filteredTools ignored when both are set. */
     const plugins = [];
     for (const plugin of uniquePlugins) {
       /** Agents-runtime-only tools (e.g. ask_user_question) never work on the
@@ -27,14 +33,12 @@ const getAvailablePluginsController = async (req, res) => {
       if (plugin.agentsOnly === true) {
         continue;
       }
-      if (includeSet.size > 0) {
-        if (!includeSet.has(plugin.pluginKey)) {
-          continue;
-        }
-      } else if (filterSet.has(plugin.pluginKey)) {
+      if (!isToolEnabled(appConfig, plugin.pluginKey)) {
         continue;
       }
-      plugins.push(checkPluginAuth(plugin) ? { ...plugin, authenticated: true } : plugin);
+      plugins.push(
+        checkPluginAuth(plugin, systemFields) ? { ...plugin, authenticated: true } : plugin,
+      );
     }
 
     res.status(200).json(plugins);
@@ -68,6 +72,10 @@ const getAvailableTools = async (req, res) => {
     }
 
     const uniquePlugins = filterUniquePlugins(availableTools);
+    const systemFields = await findSystemToolFields(
+      findPluginAuthsByKeys,
+      uniquePlugins.map((plugin) => plugin.pluginKey),
+    );
     const toolDefKeysList = toolDefinitions ? Object.keys(toolDefinitions) : null;
     const toolDefKeys = toolDefKeysList ? new Set(toolDefKeysList) : null;
 
@@ -94,11 +102,13 @@ const getAvailableTools = async (req, res) => {
           (key) => getToolkitKey({ toolkits, toolName: key }) === plugin.pluginKey,
         );
 
-      if (!isToolDefined && !isToolkit) {
+      if ((!isToolDefined && !isToolkit) || !isToolEnabled(appConfig, plugin.pluginKey)) {
         continue;
       }
 
-      toolsOutput.push(checkPluginAuth(plugin) ? { ...plugin, authenticated: true } : plugin);
+      toolsOutput.push(
+        checkPluginAuth(plugin, systemFields) ? { ...plugin, authenticated: true } : plugin,
+      );
     }
 
     res.status(200).json(toolsOutput);

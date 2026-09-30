@@ -120,6 +120,8 @@ export enum QueryKeys {
   adminModelCatalog = 'adminModelCatalog',
   adminProviders = 'adminProviders',
   adminAgents = 'adminAgents',
+  adminMCPServers = 'adminMCPServers',
+  adminTools = 'adminTools',
   adminAccess = 'adminAccess',
   adminLimits = 'adminLimits',
   adminUsage = 'adminUsage',
