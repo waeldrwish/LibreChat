@@ -412,6 +412,7 @@ const startServer = async () => {
   app.use('/api/admin/agents', routes.adminAgents);
   app.use('/api/admin/mcp', routes.adminMCP);
   app.use('/api/admin/tools', routes.adminTools);
+  app.use('/api/admin/sections', routes.adminSections);
   app.use('/api/admin/access', routes.adminAccess);
   app.use('/api/admin/usage', routes.adminUsage);
   app.use('/api/actions', routes.actions);

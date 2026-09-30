@@ -10,6 +10,7 @@ import type {
   TPrincipalAccess,
   TPrincipalAccessUpdate,
   TAdminToolUpdate,
+  TAdminSectionUpdate,
   TAdminCreateUserRequest,
   TAdminUpdateUserRequest,
   TAdminRole,
@@ -180,6 +181,13 @@ export const useSetAdminAgentStatusMutation = () =>
     ({ id, disabled }: { id: string; disabled: boolean }) =>
       dataService.setAdminAgentStatus(id, disabled),
     [QueryKeys.adminAgents, QueryKeys.adminOverview, QueryKeys.agents],
+  );
+
+export const useUpdateAdminSectionMutation = () =>
+  useAdminMutation(
+    ({ role, update }: { role: string; update: TAdminSectionUpdate }) =>
+      dataService.updateAdminSection(role, update),
+    [QueryKeys.adminSections, QueryKeys.adminRole, QueryKeys.adminAuditLog],
   );
 
 export const useUpdateAdminToolMutation = () =>

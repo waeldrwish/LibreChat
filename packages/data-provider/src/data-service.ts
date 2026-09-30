@@ -1887,6 +1887,17 @@ export function updateAdminTool(
   return request.patch(endpoints.adminTool(key), update);
 }
 
+export function getAdminSections(): Promise<adm.TAdminSections> {
+  return request.get(endpoints.adminSections());
+}
+
+export function updateAdminSection(
+  role: string,
+  update: adm.TAdminSectionUpdate,
+): Promise<{ role: adm.TAdminSectionsRole }> {
+  return request.patch(endpoints.adminSectionsRole(role), update);
+}
+
 export function getAdminAccess(
   principalType: string,
   principalId: string,

@@ -7,6 +7,7 @@ import type {
   AccessPrincipalType,
 } from '../governance';
 import type { TRole } from '../roles';
+import { Permissions, PermissionTypes } from '../permissions';
 
 /* ── Audit log taxonomy ─────────────────────────────────────────────── */
 
@@ -565,6 +566,86 @@ export type TAdminToolUpdate = {
   /** OpenAI Image Tools only; `null` returns a field to its default. */
   imageSettings?: { model?: string | null; moderation?: 'auto' | 'low' | null };
 };
+
+/* ── Chat sections ──────────────────────────────────────────────────── */
+
+/**
+ * Parts of the chat interface an administrator can show or hide per role. A section
+ * backed by a role permission is switched through that permission, which the server
+ * also enforces; the rest are `interface` settings the role's config override sets.
+ */
+export const CHAT_SECTIONS = [
+  { key: 'modelSelect' },
+  { key: 'parameters' },
+  { key: 'presets' },
+  { key: 'agents', permissionType: PermissionTypes.AGENTS, permission: Permissions.USE },
+  {
+    key: 'marketplace',
+    permissionType: PermissionTypes.MARKETPLACE,
+    permission: Permissions.USE,
+  },
+  { key: 'prompts', permissionType: PermissionTypes.PROMPTS, permission: Permissions.USE },
+  { key: 'skills', permissionType: PermissionTypes.SKILLS, permission: Permissions.USE },
+  { key: 'bookmarks', permissionType: PermissionTypes.BOOKMARKS, permission: Permissions.USE },
+  { key: 'memories', permissionType: PermissionTypes.MEMORIES, permission: Permissions.USE },
+  {
+    key: 'multiConvo',
+    permissionType: PermissionTypes.MULTI_CONVO,
+    permission: Permissions.USE,
+  },
+  {
+    key: 'temporaryChat',
+    permissionType: PermissionTypes.TEMPORARY_CHAT,
+    permission: Permissions.USE,
+  },
+  { key: 'webSearch', permissionType: PermissionTypes.WEB_SEARCH, permission: Permissions.USE },
+  { key: 'runCode', permissionType: PermissionTypes.RUN_CODE, permission: Permissions.USE },
+  {
+    key: 'fileSearch',
+    permissionType: PermissionTypes.FILE_SEARCH,
+    permission: Permissions.USE,
+  },
+  {
+    key: 'fileCitations',
+    permissionType: PermissionTypes.FILE_CITATIONS,
+    permission: Permissions.USE,
+  },
+  {
+    key: 'mcpServers',
+    permissionType: PermissionTypes.MCP_SERVERS,
+    permission: Permissions.USE,
+  },
+  {
+    key: 'sharedLinks',
+    permissionType: PermissionTypes.SHARED_LINKS,
+    permission: Permissions.CREATE,
+  },
+  { key: 'schedules', permissionType: PermissionTypes.SCHEDULES, permission: Permissions.USE },
+  { key: 'contextUsage' },
+  { key: 'feedback' },
+] as const satisfies ReadonlyArray<{
+  key: string;
+  permissionType?: PermissionTypes;
+  permission?: Permissions;
+}>;
+
+export type ChatSectionKey = (typeof CHAT_SECTIONS)[number]['key'];
+
+export type TAdminSectionsRole = {
+  name: string;
+  /** Section key → shown to this role. */
+  visible: Record<string, boolean>;
+};
+
+export type TAdminSections = {
+  roles: TAdminSectionsRole[];
+  /** Sections the deployment switches off for everyone, which no role setting brings back. */
+  globallyOff: string[];
+  /** Whether the viewer may change them. */
+  canManage: boolean;
+};
+
+export type TAdminSectionUpdate = { section: ChatSectionKey; visible: boolean };
 
 /* ── Usage ──────────────────────────────────────────────────────────── */
 

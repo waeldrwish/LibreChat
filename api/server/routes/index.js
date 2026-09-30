@@ -17,6 +17,7 @@ const adminModels = require('./admin/models');
 const adminAgents = require('./admin/agents');
 const adminMCP = require('./admin/mcp');
 const adminTools = require('./admin/tools');
+const adminSections = require('./admin/sections');
 const adminAccess = require('./admin/access');
 const adminUsage = require('./admin/usage');
 const endpoints = require('./endpoints');
@@ -72,6 +73,7 @@ module.exports = {
   adminAgents,
   adminMCP,
   adminTools,
+  adminSections,
   adminAccess,
   adminUsage,
   keys,

@@ -13,6 +13,7 @@ import type {
   TAdminRolesPage,
   TAdminAgentsPage,
   TAdminTools,
+  TAdminSections,
   TAdminMCPServersPage,
   TAdminMCPServersParams,
   TAdminGroupsPage,
@@ -188,6 +189,12 @@ export const useAdminMCPServersQuery = (
     () => dataService.listAdminMCPServers(params),
     { ...defaults, keepPreviousData: true, enabled },
   );
+
+export const useAdminSectionsQuery = (enabled = true): UseQueryResult<TAdminSections> =>
+  useQuery<TAdminSections>([QueryKeys.adminSections], () => dataService.getAdminSections(), {
+    ...defaults,
+    enabled,
+  });
 
 export const useAdminToolsQuery = (enabled = true): UseQueryResult<TAdminTools> =>
   useQuery<TAdminTools>([QueryKeys.adminTools], () => dataService.getAdminTools(), {

@@ -33,7 +33,15 @@ type Draft = {
   tools: string[];
 };
 
-function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
+function AgentForm({
+  agent,
+  onClose,
+  onCreated,
+}: {
+  agent?: Agent;
+  onClose: () => void;
+  onCreated?: (id: string) => void;
+}) {
   const localize = useLocalize();
   const notify = useAdminNotify();
   const queryClient = useQueryClient();
@@ -56,10 +64,13 @@ function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
       queryClient.invalidateQueries([QueryKeys.adminOverview]),
     ]);
   const handlers = {
-    onSuccess: () => {
+    onSuccess: (saved: Agent) => {
       refresh();
       notify.success(localize(agent ? 'com_admin_saved' : 'com_admin_agent_created'));
       onClose();
+      if (!agent) {
+        onCreated?.(saved.id);
+      }
     },
     onError: notify.error,
   };
@@ -187,9 +198,12 @@ function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
 export default function AgentFormDialog({
   target,
   onClose,
+  onCreated,
 }: {
   target: { agent?: TAdminAgent } | null;
   onClose: () => void;
+  /** Called with the new agent's id so the caller can open its settings. */
+  onCreated?: (id: string) => void;
 }) {
   const localize = useLocalize();
   const agentId = target?.agent?.id ?? '';
@@ -209,6 +223,7 @@ export default function AgentFormDialog({
             key={agentId || 'new'}
             agent={agentId ? expanded.data : undefined}
             onClose={onClose}
+            onCreated={onCreated}
           />
         ))}
     </OGDialog>

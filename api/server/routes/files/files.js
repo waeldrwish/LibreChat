@@ -60,6 +60,10 @@ const { Readable } = require('stream');
 const db = require('~/models');
 
 const router = express.Router();
+
+/** The same capability that lets an upload reach any agent also lets its files be listed and removed. */
+const hasAgentManageCapability = (user) =>
+  hasCapability(user, SystemCapabilities.MANAGE_AGENTS).catch(() => false);
 const AGENT_TOOL_RESOURCE_KEYS = new Set([
   EToolResources.execute_code,
   EToolResources.file_search,
@@ -115,13 +119,14 @@ router.get('/agent/:agent_id', async (req, res) => {
     }
 
     if (agent.author.toString() !== userId) {
-      const hasEditPermission = await checkPermission({
-        userId,
-        role: req.user.role,
-        resourceType: ResourceType.AGENT,
-        resourceId: agent._id,
-        requiredPermission: PermissionBits.EDIT,
-      });
+      const hasEditPermission =
+        (await checkPermission({
+          userId,
+          role: req.user.role,
+          resourceType: ResourceType.AGENT,
+          resourceId: agent._id,
+          requiredPermission: PermissionBits.EDIT,
+        })) || (await hasAgentManageCapability(req.user));
 
       if (!hasEditPermission) {
         return res.status(200).json([]);
@@ -238,7 +243,8 @@ router.delete('/', async (req, res) => {
           resourceType: ResourceType.AGENT,
           resourceId: agent._id,
           requiredPermission: PermissionBits.EDIT,
-        }));
+        })) ||
+        (await hasAgentManageCapability(req.user));
       if (!hasAgentEditAccess) {
         return res.status(403).json({
           message: 'You can only delete files you have access to',

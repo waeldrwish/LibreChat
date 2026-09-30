@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bot, Globe, Pencil, Plus } from 'lucide-react';
 import { QueryKeys, ResourceType } from 'librechat-data-provider';
@@ -60,7 +61,8 @@ export default function AgentsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(ALL);
   const [offset, setOffset] = useState(0);
-  const [editing, setEditing] = useState<{ agent?: TAdminAgent } | null>(null);
+  const navigate = useNavigate();
+  const [creating, setCreating] = useState(false);
   const debounced = useDebounce(search, 300);
   const agents = useAdminAgentsQuery({
     search: debounced || undefined,
@@ -76,7 +78,7 @@ export default function AgentsPage() {
         description={localize('com_admin_agents_description')}
         actions={
           canManage && (
-            <Button onClick={() => setEditing({})}>
+            <Button onClick={() => setCreating(true)}>
               <Plus className="size-4" aria-hidden="true" />
               {localize('com_admin_agent_add')}
             </Button>
@@ -139,7 +141,12 @@ export default function AgentsPage() {
                   {data.agents.map((agent) => (
                     <TableRow key={agent.id}>
                       <TableCell>
-                        <span className="block font-medium">{agent.name}</span>
+                        <Link
+                          to={agent.id}
+                          className="block font-medium text-text-primary hover:underline"
+                        >
+                          {agent.name}
+                        </Link>
                         {agent.description && (
                           <span className="line-clamp-1 text-xs text-text-secondary">
                             {agent.description}
@@ -171,13 +178,15 @@ export default function AgentsPage() {
                       {canManage && (
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={localize('com_admin_agent_edit_named', { 0: agent.name })}
-                              onClick={() => setEditing({ agent })}
-                            >
-                              <Pencil className="size-4" aria-hidden="true" />
+                            <Button asChild variant="ghost" size="icon-sm">
+                              <Link
+                                to={agent.id}
+                                aria-label={localize('com_admin_agent_edit_named', {
+                                  0: agent.name,
+                                })}
+                              >
+                                <Pencil className="size-4" aria-hidden="true" />
+                              </Link>
                             </Button>
                             <GenericGrantAccessDialog
                               resourceDbId={agent._id}
@@ -205,7 +214,11 @@ export default function AgentsPage() {
           )}
         </QueryState>
       </Panel>
-      <AgentFormDialog target={editing} onClose={() => setEditing(null)} />
+      <AgentFormDialog
+        target={creating ? {} : null}
+        onClose={() => setCreating(false)}
+        onCreated={(id) => navigate(id)}
+      />
     </>
   );
 }

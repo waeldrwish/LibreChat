@@ -664,6 +664,8 @@ export const adminMCPServers = (params: Record<string, unknown> = {}) =>
   `${admin()}/mcp${buildQuery(params)}`;
 
 export const adminTools = () => `${admin()}/tools`;
+export const adminSections = () => `${admin()}/sections`;
+export const adminSectionsRole = (role: string) => adminId(adminSections(), role);
 export const adminTool = (key: string) => adminId(adminTools(), key);
 
 export const adminAccess = (principalType: string, principalId: string) =>
