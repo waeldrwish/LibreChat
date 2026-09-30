@@ -119,6 +119,7 @@ function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
             <div className="flex flex-col gap-1.5">
               <Label>{localize('com_admin_field_provider')}</Label>
               <Dropdown
+                portal={false}
                 variant="field"
                 ariaLabel={localize('com_admin_field_provider')}
                 value={draft.provider}
@@ -131,6 +132,7 @@ function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
             <div className="flex flex-col gap-1.5">
               <Label>{localize('com_admin_field_model')}</Label>
               <Dropdown
+                portal={false}
                 variant="field"
                 searchable={true}
                 ariaLabel={localize('com_admin_field_model')}
@@ -159,6 +161,7 @@ function AgentForm({ agent, onClose }: { agent?: Agent; onClose: () => void }) {
             <div className="flex flex-col gap-1.5">
               <Label>{localize('com_admin_agent_tools')}</Label>
               <MultiSelect
+                portal={false}
                 items={toolItems}
                 label={localize('com_admin_agent_tools')}
                 labelClassName="sr-only"

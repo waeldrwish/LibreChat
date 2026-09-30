@@ -55,6 +55,12 @@ interface MultiSelectProps<T extends string> {
   showSelectedValues?: boolean;
   showItemCheckboxes?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Set `false` inside a dialog: a portaled, modal popover sits outside the dialog's
+   * pointer layer and focus trap, so its options cannot be picked and the dialog closes
+   * under it.
+   */
+  portal?: boolean;
 }
 
 function defaultRender<T extends string>(
@@ -101,6 +107,7 @@ export default function MultiSelect<T extends string>({
   showSelectedValues = false,
   showItemCheckboxes = false,
   onOpenChange,
+  portal = true,
 }: MultiSelectProps<T>): JSX.Element {
   const selectRef = useRef<HTMLButtonElement>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -170,7 +177,8 @@ export default function MultiSelect<T extends string>({
           aria-label={label || placeholder}
           gutter={4}
           sameWidth
-          modal
+          modal={portal}
+          portal={portal}
           unmountOnHide
           finalFocus={selectRef}
           className={cn(

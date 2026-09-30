@@ -103,6 +103,7 @@ function CreateRoleDialog({
             <div className="flex flex-col gap-1.5">
               <Label>{localize('com_admin_role_preset')}</Label>
               <Dropdown
+                portal={false}
                 variant="field"
                 ariaLabel={localize('com_admin_role_preset')}
                 value={preset}

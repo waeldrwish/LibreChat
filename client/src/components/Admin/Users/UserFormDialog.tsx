@@ -210,6 +210,7 @@ export default function UserFormDialog({
               <div className="flex flex-col gap-1.5">
                 <Label>{localize('com_admin_field_role')}</Label>
                 <Dropdown
+                  portal={false}
                   variant="field"
                   ariaLabel={localize('com_admin_field_role')}
                   value={draft.role}
@@ -222,6 +223,7 @@ export default function UserFormDialog({
               <div className="flex flex-col gap-1.5">
                 <Label>{localize('com_admin_field_groups')}</Label>
                 <MultiSelect
+                  portal={false}
                   items={groupItems}
                   selectedValues={draft.groupIds}
                   setSelectedValues={(values) => set('groupIds', values)}

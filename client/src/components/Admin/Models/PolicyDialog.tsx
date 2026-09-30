@@ -91,6 +91,7 @@ function AudienceFields({
       />
       {groupItems.length > 0 && (
         <MultiSelect
+          portal={false}
           items={groupItems}
           label={localize('com_admin_policy_groups')}
           labelClassName="sr-only"
@@ -101,6 +102,7 @@ function AudienceFields({
       )}
       {roleItems.length > 0 && (
         <MultiSelect
+          portal={false}
           items={roleItems}
           label={localize('com_admin_policy_roles')}
           labelClassName="sr-only"
@@ -288,6 +290,7 @@ function PolicyForm({
           <div className="flex flex-col gap-1.5">
             <Label>{localize('com_admin_policy_access')}</Label>
             <Dropdown
+              portal={false}
               variant="field"
               ariaLabel={localize('com_admin_policy_access')}
               value={access}
@@ -318,6 +321,7 @@ function PolicyForm({
             <div className="flex flex-col gap-1.5">
               <Label>{localize('com_admin_policy_agents')}</Label>
               <MultiSelect
+                portal={false}
                 items={agentItems}
                 label={localize('com_admin_policy_agents')}
                 labelClassName="sr-only"
