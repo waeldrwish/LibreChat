@@ -1,0 +1,12 @@
+# Runs this fork's build (Arabic admin panel) instead of the upstream image.
+# docker-compose.override.yml is gitignored, so copy this file to that name on each machine:
+#   cp docker-compose.arabic.yml docker-compose.override.yml
+# `docker compose pull api` fetches the image that .github/workflows/arabic-admin-image.yml
+# publishes; `docker compose up -d --build` builds it from this checkout instead.
+
+services:
+  api:
+    image: ghcr.io/waeldrwish/librechat-arabic-admin:latest
+    build:
+      context: .
+      target: node
