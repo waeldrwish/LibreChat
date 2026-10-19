@@ -686,6 +686,77 @@ html.high-contrast.dark .btn-neutral:hover {
   size-adjust: 94%;
 }
 
+/**
+ * Inter has no Arabic glyphs, so Arabic, Persian and Uyghur text fell through to whatever
+ * face the browser picks for `sans-serif` — often a calligraphic one. These faces join the
+ * Inter family for the Arabic blocks only: every stack that names Inter (the theme token,
+ * Tailwind `sans`) renders Arabic in Noto Sans Arabic, and the browser fetches a file only
+ * once Arabic characters are on the page. The weights mirror Inter's shifted mapping
+ * above, and the italic slots reuse the upright files because Arabic is not slanted.
+ */
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400;
+  src: url('$fonts/noto-sans-arabic-arabic-400-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 400;
+  src: url('$fonts/noto-sans-arabic-arabic-400-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 500;
+  src: url('$fonts/noto-sans-arabic-arabic-600-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 500;
+  src: url('$fonts/noto-sans-arabic-arabic-600-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 600;
+  src: url('$fonts/noto-sans-arabic-arabic-700-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: Inter;
+  font-style: italic;
+  font-weight: 600;
+  src: url('$fonts/noto-sans-arabic-arabic-700-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+/**
+ * Arabic-script letters are joined, and letter-spacing pries them apart into the
+ * disconnected look the `tracking-*` utilities gave headers and labels. The selector
+ * outranks a single utility class, so no `!important` is needed.
+ */
+html:is(:lang(ar), :lang(fa), :lang(ug)) * {
+  letter-spacing: normal;
+}
+
 @font-face {
   font-display: swap;
   font-family: Roboto Mono;

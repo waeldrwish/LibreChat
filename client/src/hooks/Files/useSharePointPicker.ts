@@ -151,7 +151,9 @@ export default function useSharePointPicker({
                   }
 
                   showToast({
-                    message: `Selected ${selectedFiles.length} file(s) from SharePoint`,
+                    message: localize('com_files_sharepoint_selected', {
+                      0: selectedFiles.length,
+                    }),
                     status: 'success',
                   });
                 }
@@ -192,7 +194,7 @@ export default function useSharePointPicker({
         console.error('Error processing port message:', error);
       }
     },
-    [token, onFilesSelected, showToast, onClose],
+    [token, onFilesSelected, showToast, onClose, localize],
   );
 
   // Initialization message handler - establishes MessagePort communication
@@ -236,7 +238,7 @@ export default function useSharePointPicker({
   const openSharePointPicker = async () => {
     if (!token) {
       showToast({
-        message: 'Unable to access SharePoint. Please ensure you are logged in with Microsoft.',
+        message: localize('com_files_sharepoint_auth_error'),
         status: 'error',
       });
       return;
@@ -349,7 +351,7 @@ export default function useSharePointPicker({
     } catch (error) {
       console.error('SharePoint file picker error:', error);
       showToast({
-        message: 'Failed to open SharePoint file picker.',
+        message: localize('com_files_sharepoint_picker_error'),
         status: 'error',
       });
     }

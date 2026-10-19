@@ -137,7 +137,7 @@ export default function ActionsPanel({
                         const currentId = assistant_id ?? '';
                         if (!currentId) {
                           return showToast({
-                            message: 'No assistant_id found, is the assistant created?',
+                            message: localize('com_assistants_no_assistant_id_error'),
                             status: 'error',
                           });
                         }

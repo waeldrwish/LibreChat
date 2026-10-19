@@ -1,5 +1,5 @@
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSprings, animated, SpringConfig } from '@react-spring/web';
-import { useEffect, useRef, useState } from 'react';
 
 interface SegmenterOptions {
   granularity?: 'grapheme' | 'word' | 'sentence';
@@ -58,6 +58,15 @@ const splitGraphemes = (text: string): string[] => {
   }
 };
 
+/**
+ * Hebrew, Arabic and the other right-to-left scripts. A per-letter inline-block is shaped on
+ * its own, so Arabic letters lose their joins, and bidi treats each block as a neutral object,
+ * so the letters follow the container's direction instead of the script's. Text containing
+ * these scripts animates word by word as plain inline spans, which the browser shapes and
+ * orders like any other text.
+ */
+const RTL_SCRIPT = /[֐-ࣿיִ-﷿ﹰ-ﻼ\u{10800}-\u{10FFF}\u{1E800}-\u{1EFFF}]/u;
+
 const SplitText: React.FC<SplitTextProps> = ({
   text = '',
   className = '',
@@ -71,7 +80,8 @@ const SplitText: React.FC<SplitTextProps> = ({
   onLetterAnimationComplete,
   onLineCountChange,
 }) => {
-  const words = text.split(' ').map(splitGraphemes);
+  const isRtl = RTL_SCRIPT.test(text);
+  const words = text.split(' ').map((word) => (isRtl ? [word] : splitGraphemes(word)));
   const letters = words.flat();
   const [inView, setInView] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
@@ -138,31 +148,40 @@ const SplitText: React.FC<SplitTextProps> = ({
       <span className="sr-only">{text}</span>
       <p
         ref={ref}
+        dir="auto"
         className={`split-parent inline overflow-hidden ${className}`}
         style={{ textAlign, whiteSpace: 'normal', wordWrap: 'break-word' }}
         aria-hidden="true"
       >
-        {words.map((word, wordIndex) => (
-          <span key={wordIndex} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
-            {word.map((letter, letterIndex) => {
-              const index =
-                words.slice(0, wordIndex).reduce((acc, w) => acc + w.length, 0) + letterIndex;
+        {isRtl &&
+          words.map(([word], wordIndex) => (
+            <Fragment key={wordIndex}>
+              <animated.span style={springs[wordIndex]}>{word}</animated.span>
+              {wordIndex < words.length - 1 && ' '}
+            </Fragment>
+          ))}
+        {!isRtl &&
+          words.map((word, wordIndex) => (
+            <span key={wordIndex} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+              {word.map((letter, letterIndex) => {
+                const index =
+                  words.slice(0, wordIndex).reduce((acc, w) => acc + w.length, 0) + letterIndex;
 
-              return (
-                <animated.span
-                  key={index}
-                  style={springs[index]}
-                  className="inline-block transform transition-opacity will-change-transform"
-                >
-                  {letter}
-                </animated.span>
-              );
-            })}
-            {wordIndex < words.length - 1 && (
-              <span style={{ display: 'inline-block', width: '0.3em' }}>&nbsp;</span>
-            )}
-          </span>
-        ))}
+                return (
+                  <animated.span
+                    key={index}
+                    style={springs[index]}
+                    className="inline-block transform transition-opacity will-change-transform"
+                  >
+                    {letter}
+                  </animated.span>
+                );
+              })}
+              {wordIndex < words.length - 1 && (
+                <span style={{ display: 'inline-block', width: '0.3em' }}>&nbsp;</span>
+              )}
+            </span>
+          ))}
       </p>
     </>
   );

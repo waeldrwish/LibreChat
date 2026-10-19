@@ -21,8 +21,9 @@ function DefaultFallback() {
       role="alert"
       aria-live="polite"
     >
-      {/* eslint-disable-next-line i18next/no-literal-string */}
-      <div className="mb-2 text-sm text-text-secondary">Sources temporarily unavailable</div>
+      <div className="mb-2 text-sm text-text-secondary">
+        {localize('com_sources_temporarily_unavailable')}
+      </div>
       <Button
         variant="outline"
         size="sm"

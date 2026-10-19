@@ -119,7 +119,7 @@ function useTextToSpeechExternal({
         autoPlayAudio(blobUrl);
       } catch (error) {
         showToast({
-          message: `Error processing audio: ${(error as Error).message}`,
+          message: localize('com_nav_audio_process_error', { 0: (error as Error).message }),
           status: 'error',
         });
       }
