@@ -1,0 +1,199 @@
+# Code execution (code-interpreter) for a LibreChat that already runs on this server.
+# It joins LibreChat's Docker network as "codeapi" and publishes no ports.
+# Every image is pulled; nothing is built on the server. install.sh writes .env and starts it.
+
+name: codeapi
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 20m
+    max-file: "5"
+
+# Shared by every code-interpreter service.
+x-codeapi-base: &codeapi-base
+  CODEAPI_INTERNAL_SERVICE_TOKEN: ${CODEAPI_INTERNAL_SERVICE_TOKEN:?run install.sh first}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${CODEAPI_REDIS_PASSWORD:?run install.sh first}
+
+networks:
+  librechat:
+    external: true
+    name: ${LIBRECHAT_NETWORK:?run install.sh first}
+
+services:
+  # Each service gets only the secrets it needs: the hardened startup checks
+  # refuse to boot when a secret reaches a service it does not belong to.
+
+  codeapi:
+    image: ghcr.io/waeldrwish/codeapi-api:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    environment:
+      <<: *codeapi-base
+      LOCAL_MODE: "false"
+      CODEAPI_HARDENED_SANDBOX_MODE: "true"
+      SERVICE_PORT: "3112"
+      SANDBOX_ENDPOINT: http://sandbox-runner:2000/api/v2
+      EGRESS_GATEWAY_URL: http://egress_gateway:3190
+      FILE_SERVER_URL: http://file_server:3000
+      TOOL_CALL_SERVER_URL: http://tool_call_server:3033
+      CODEAPI_HTTP_JSON_LIMIT: 50mb
+      CODEAPI_AUTH_PROVIDER: librechat-jwt
+      CODEAPI_JWT_ISSUER: librechat
+      CODEAPI_JWT_AUDIENCE: codeapi
+      CODEAPI_JWT_ALLOWED_ALGS: EdDSA
+      CODEAPI_JWT_CLOCK_SKEW_SECONDS: "30"
+      CODEAPI_JWT_MAX_TTL_SECONDS: "300"
+      CODEAPI_JWT_KEY_CACHE_TTL_SECONDS: "30"
+      CODEAPI_JWT_JWKS_JSON: ${CODEAPI_JWT_JWKS_JSON:?run install.sh first}
+      CODEAPI_JWT_SINGLE_TENANT_ID: legacy
+    networks:
+      default: {}
+      # LibreChat reaches it at http://codeapi:3112/v1
+      librechat:
+        aliases:
+          - codeapi
+    depends_on:
+      - redis
+      - tool_call_server
+    logging: *logging
+
+  service-worker:
+    image: ghcr.io/waeldrwish/codeapi-worker:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    environment:
+      <<: *codeapi-base
+      LOCAL_MODE: "false"
+      CODEAPI_HARDENED_SANDBOX_MODE: "true"
+      CODEAPI_AUTH_PROVIDER: librechat-jwt
+      CODEAPI_JWT_SINGLE_TENANT_ID: legacy
+      CODEAPI_EXECUTION_MANIFEST_PRIVATE_KEY: ${CODEAPI_EXECUTION_MANIFEST_PRIVATE_KEY:?run install.sh first}
+      SANDBOX_ENDPOINT: http://sandbox-runner:2000/api/v2
+      EGRESS_GATEWAY_URL: http://egress_gateway:3190
+      PYTHON_CONCURRENCY: ${CODEAPI_MAX_JOBS:-4}
+      OTHER_CONCURRENCY: ${CODEAPI_MAX_JOBS:-4}
+      WORKER_HEALTH_PORT: "3113"
+    depends_on:
+      redis:
+        condition: service_started
+      sandbox-runner:
+        condition: service_healthy
+    logging: *logging
+
+  egress_gateway:
+    image: ghcr.io/waeldrwish/codeapi-egress-gateway:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    environment:
+      <<: *codeapi-base
+      SERVICE_NAME: egress-gateway
+      CODEAPI_HARDENED_SANDBOX_MODE: "true"
+      CODEAPI_EGRESS_LEDGER_REQUIRED: "true"
+      EGRESS_GATEWAY_PORT: "3190"
+      EGRESS_GATEWAY_FILE_SERVER_URL: http://file_server:3000
+      EGRESS_GATEWAY_TOOL_CALL_SERVER_URL: http://tool_call_server:3033
+      EGRESS_GATEWAY_MAX_TOOL_CALL_BYTES: "1048576"
+      CODEAPI_EGRESS_GRANT_SECRET: ${CODEAPI_EGRESS_GRANT_SECRET:?run install.sh first}
+    depends_on:
+      - file_server
+      - tool_call_server
+      - redis
+    logging: *logging
+
+  tool_call_server:
+    image: ghcr.io/waeldrwish/codeapi-tool-call-server:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    environment:
+      <<: *codeapi-base
+      TOOL_CALL_SERVER_PORT: "3033"
+      TOOL_CALL_REQUEST_TIMEOUT: "300000"
+      TOOL_CALL_SESSION_EXPIRY: "600"
+    depends_on:
+      - redis
+    logging: *logging
+
+  sandbox-runner:
+    image: ghcr.io/waeldrwish/codeapi-sandbox-runner:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    privileged: false
+    devices:
+      - /dev/kvm:/dev/kvm
+    environment:
+      KVM_ENABLED: "true"
+      # The KVM path must not hand a host directory to libkrun as a long-lived share.
+      LAUNCHER_PACKAGES_HOST: /disabled-host-packages
+      CODEAPI_HARDENED_SANDBOX_MODE: "true"
+      EGRESS_GATEWAY_URL: http://egress_gateway:3190
+      SANDBOX_EXECUTE_BODY_LIMIT: 50mb
+      SANDBOX_PACKAGES_DIRECTORY: /pkgs
+      SANDBOX_LOG_LEVEL: DEBUG
+      SANDBOX_OUTPUT_MAX_SIZE: "65536"
+      SANDBOX_MAX_CONCURRENT_JOBS: ${CODEAPI_MAX_JOBS:-4}
+      SANDBOX_PER_JOB_UIDS: "true"
+      SANDBOX_JOB_UID_BASE: "200000"
+      SANDBOX_JOB_GID_BASE: "200000"
+      SANDBOX_WORKSPACE_REAPER_MAX_AGE_SECONDS: "3600"
+      SANDBOX_RUN_TIMEOUT: "300000"
+      SANDBOX_RUN_CPU_TIME: "300000"
+      SANDBOX_COMPILE_TIMEOUT: "30000"
+      LAUNCHER_VCPUS: "2"
+      LAUNCHER_RAM_MIB: "2048"
+      LAUNCHER_LOG_LEVEL: "3"
+      SANDBOX_ALLOWED_LOCAL_NETWORK_PORT: "3190"
+      SANDBOX_FORWARD_TARGET: egress_gateway:3190
+      SANDBOX_REQUIRE_EGRESS_MANIFEST: "true"
+      SANDBOX_EXECUTION_MANIFEST_PUBLIC_KEY: ${SANDBOX_EXECUTION_MANIFEST_PUBLIC_KEY:?run install.sh first}
+      # Guest clock drift fails every execution with "not_yet_valid"; report it in the healthcheck.
+      SANDBOX_RUNNER_CLOCK_SKEW_LIVENESS_LIMIT_SECONDS: "10"
+      SANDBOX_RUNNER_HEALTHCHECK_TIMEOUT_SECONDS: "2"
+    depends_on:
+      egress_gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/sandbox-runner-healthcheck.sh"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 20s
+    logging: *logging
+
+  file_server:
+    image: ghcr.io/waeldrwish/codeapi-file-server:${CODEAPI_IMAGE_TAG:?run install.sh first}
+    restart: unless-stopped
+    environment:
+      <<: *codeapi-base
+      FILE_SERVER_PORT: "3000"
+      MINIO_BUCKET: codeapi
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: codeapi
+      MINIO_SECRET_KEY: ${CODEAPI_MINIO_PASSWORD:?run install.sh first}
+    depends_on:
+      - minio
+      - redis
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${CODEAPI_REDIS_PASSWORD:?run install.sh first}
+    logging: *logging
+
+  minio:
+    # MinIO no longer publishes public images; Chainguard builds the same server from source.
+    image: cgr.dev/chainguard/minio:latest
+    restart: unless-stopped
+    # The image runs as a non-root user, but a new named volume is owned by root.
+    user: "0:0"
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: codeapi
+      MINIO_ROOT_PASSWORD: ${CODEAPI_MINIO_PASSWORD:?run install.sh first}
+      MINIO_BROWSER: "off"
+    volumes:
+      - minio-data:/data
+    logging: *logging
+
+volumes:
+  minio-data:

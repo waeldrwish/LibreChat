@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>تنفيذ الكود على السيرفر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Noto+Kufi+Arabic:wght@600;700&display=swap">
+<style>
+/* Layout: one reading column; a values form, three numbered steps, then reference sections. */
+:root {
+  --bg: #F2F5F3;
+  --surface: #FFFFFF;
+  --ink: #16201C;
+  --muted: #5A6862;
+  --line: #D6DED9;
+  --accent: #0D6A53;
+  --accent-soft: #DEEFE8;
+  --pc: #3D4FA0;
+  --pc-soft: #E5E8F7;
+  --danger: #A8291C;
+  --danger-soft: #FBE9E6;
+  --code-bg: #1B2421;
+  --code-fg: #E1EBE6;
+  --code-muted: #8EA49B;
+  --code-line: #2E3B37;
+
+  --font-display: "Noto Kufi Arabic", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1412;
+    --surface: #151D1A;
+    --ink: #E3EBE7;
+    --muted: #98AAA2;
+    --line: #26332E;
+    --accent: #4DC29F;
+    --accent-soft: #143029;
+    --pc: #9DAAF0;
+    --pc-soft: #1C2240;
+    --danger: #F2877D;
+    --danger-soft: #3A1814;
+    --code-bg: #090E0C;
+    --code-fg: #DAE5E0;
+    --code-muted: #7E948B;
+    --code-line: #22302B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1412;
+  --surface: #151D1A;
+  --ink: #E3EBE7;
+  --muted: #98AAA2;
+  --line: #26332E;
+  --accent: #4DC29F;
+  --accent-soft: #143029;
+  --pc: #9DAAF0;
+  --pc-soft: #1C2240;
+  --danger: #F2877D;
+  --danger-soft: #3A1814;
+  --code-bg: #090E0C;
+  --code-fg: #DAE5E0;
+  --code-muted: #7E948B;
+  --code-line: #22302B;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.75;
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+p code, li code, td code, summary code, label code, .alert code {
+  font-family: var(--font-mono);
+  font-size: .86em;
+  background: var(--accent-soft);
+  color: var(--ink);
+  padding: 1px 6px;
+  border-radius: 4px;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.wrap {
+  max-width: 860px;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+
+/* Header */
+.masthead { display: grid; gap: 14px; margin-bottom: 30px; }
+.eyebrow { font-size: .8rem; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.4rem);
+  line-height: 1.35;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede { margin: 0; font-size: 1.08rem; max-width: 62ch; }
+
+/* Sections */
+.block { padding-block: 28px; border-top: 1px solid var(--line); display: grid; gap: 14px; }
+.block > h2 { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.5; margin: 0; text-wrap: balance; }
+.block p { margin: 0; max-width: 66ch; }
+.block ul, .step ul { margin: 0; padding-inline-start: 1.3em; display: grid; gap: 4px; max-width: 66ch; }
+
+/* Form */
+.values {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+.values h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 20px; }
+.field { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.field label { font-weight: 600; font-size: .93rem; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.field input {
+  width: 100%;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.field input[aria-invalid="true"] { border-color: var(--danger); background: var(--danger-soft); }
+.hint { font-size: .84rem; color: var(--muted); line-height: 1.55; margin: 0; }
+.hint.err { color: var(--danger); }
+.tag { font-size: .72rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--danger-soft); color: var(--danger); }
+
+/* Steps */
+.step { padding-block: 30px; border-top: 1px solid var(--line); display: grid; gap: 14px; }
+.step-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; align-items: start; }
+.num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.1rem;
+  line-height: 1.1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  grid-row: span 2;
+}
+.step-head h2 { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.5; margin: 0; text-wrap: balance; }
+.where { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: .85rem; color: var(--muted); }
+.prompt {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.prompt.is-pc { background: var(--pc-soft); color: var(--pc); }
+.step p { margin: 0; max-width: 66ch; }
+
+.code { background: var(--code-bg); color: var(--code-fg); border-radius: 9px; overflow: hidden; min-width: 0; direction: ltr; }
+.code-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px 7px 14px;
+  border-bottom: 1px solid var(--code-line);
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  color: var(--code-muted);
+}
+.copy {
+  font-family: var(--font-body);
+  font-size: .84rem;
+  color: var(--code-fg);
+  background: transparent;
+  border: 1px solid var(--code-line);
+  border-radius: 6px;
+  padding: 3px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.copy:hover { background: var(--code-line); }
+.copy.is-ok { border-color: var(--accent); color: var(--accent); }
+.code pre { margin: 0; padding: 14px 16px; overflow: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.65; text-align: left; }
+.code code { white-space: pre; }
+
+.expect { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-size: .93rem; }
+.expect > span:first-child { color: var(--muted); font-weight: 600; }
+.alert { background: var(--danger-soft); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 14px; font-size: .93rem; max-width: 66ch; }
+.alert b { color: var(--danger); }
+.aside { font-size: .93rem; color: var(--muted); max-width: 66ch; }
+
+.checklist { list-style: none; padding: 0 !important; }
+.checklist label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.checklist input { margin-top: .45em; accent-color: var(--accent); width: 16px; height: 16px; flex: 0 0 auto; }
+
+/* Reference */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: start; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 600; color: var(--muted); font-size: .85rem; background: var(--bg); }
+td code { white-space: nowrap; }
+
+details { border-bottom: 1px solid var(--line); }
+details:first-of-type { border-top: 1px solid var(--line); }
+summary { cursor: pointer; padding: 12px 2px; font-weight: 600; }
+details > div { padding: 0 2px 14px; display: grid; gap: 8px; max-width: 66ch; }
+details p { margin: 0; }
+
+footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; display: grid; gap: 6px; }
+footer p { margin: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .copy { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">waeldrwish/LibreChat · السيرفر الحالي</div>
+    <h1>تنفيذ الكود على السيرفر</h1>
+    <p class="lede">يضيف code-interpreter إلى LibreChat الذي يعمل الآن على السيرفر، فيصبح الوكيل قادراً على إنشاء ملفات Word وExcel وPowerPoint. لا يستبدل LibreChat، ولا يلمس قاعدة البيانات أو الـ reverse proxy.</p>
+  </header>
+
+  <section class="block" aria-labelledby="values-title">
+    <form class="values" id="values-form" novalidate>
+      <h2 id="values-title">قيمك</h2>
+      <div class="fields">
+        <div class="field">
+          <label for="ip">عنوان IP السيرفر <span class="tag" id="ip-tag">مثال، غيّره</span></label>
+          <input id="ip" type="text" dir="ltr" autocomplete="off" spellcheck="false" value="203.0.113.10">
+          <p class="hint" id="ip-msg">أو اسم السيرفر الذي تستخدمه مع ssh.</p>
+        </div>
+        <div class="field">
+          <label for="user">مستخدم SSH</label>
+          <input id="user" type="text" dir="ltr" autocomplete="off" spellcheck="false" value="root">
+          <p class="hint" id="user-msg">عادة <code>root</code> أو <code>ubuntu</code>.</p>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="block" aria-labelledby="before-title">
+    <h2 id="before-title">قبل البدء</h2>
+    <ul>
+      <li>آخر تشغيل لـ <a href="https://github.com/waeldrwish/code-intrepter/actions/workflows/publish-images.yml" target="_blank" rel="noopener">Publish Images</a> في مستودع code-interpreter ناجح، والمهام الست خضراء.</li>
+      <li>token من GitHub يقرأ الصور الخاصة. أنشئه من <a href="https://github.com/settings/tokens/new?scopes=read:packages&amp;description=librechat-server" target="_blank" rel="noopener">صفحة Tokens (classic)</a> بصلاحية <code>read:packages</code> فقط. السكربت يطلبه منك مرة واحدة.</li>
+      <li>السيرفر يدعم KVM: الأمر <code>ls /dev/kvm</code> يطبع المسار ولا يعطي خطأ. على جهاز عندك، مثل لابتوب، يكفي تفعيل Virtualization من الـ BIOS.</li>
+    </ul>
+  </section>
+
+  <!-- STEP 1 -->
+  <section class="step" aria-labelledby="s1-title">
+    <div class="step-head">
+      <div class="num">1</div>
+      <h2 id="s1-title">انسخ الملفين إلى السيرفر</h2>
+      <div class="where">من جهازك، في PowerShell <span class="prompt is-pc">PS D:\Projects\libre_ai&gt;</span></div>
+    </div>
+    <p>ينشئ المجلد <code>/opt/codeapi</code> على السيرفر، منفصلاً عن مجلد LibreChat، وينسخ إليه ملفَّي <code>deploy/codeapi</code>.</p>
+    <div class="code">
+      <div class="code-bar"><span>copy files</span><button type="button" class="copy">نسخ</button></div>
+      <pre><code data-tpl="copy"></code></pre>
+    </div>
+    <p class="aside"><b>إن كان السيرفر جهازاً عندك، مثل لابتوب لينكس:</b> لا تحتاج IP ولا SSH. انقل الملفين إليه بأي طريقة (فلاشة، Drive، تلغرام)، فلا أسرار فيهما. افتح مجلدهما، واضغط بالزر الأيمن ثم <b>Open in Terminal</b>، ونفّذ:</p>
+    <div class="code">
+      <div class="code-bar"><span>same machine</span><button type="button" class="copy">نسخ</button></div>
+      <pre><code>sudo mkdir -p /opt/codeapi &amp;&amp; sudo cp docker-compose.yml install.sh /opt/codeapi/</code></pre>
+    </div>
+    <p class="aside">ثم في الخطوة 2 تخطَّ سطر <code>ssh</code>.</p>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step" aria-labelledby="s2-title">
+    <div class="step-head">
+      <div class="num">2</div>
+      <h2 id="s2-title">شغّل السكربت</h2>
+      <div class="where">على السيرفر <span class="prompt js-prompt">root@server:/opt/codeapi$</span></div>
+    </div>
+    <p>يسألك عن token الـ GitHub مرة واحدة، ثم يكمل وحده:</p>
+    <ul>
+      <li>يجد حاوية LibreChat وملف <code>.env</code> الخاص بها وحده، ويتوقف دون أي تغيير إن وجد إعدادات تنفيذ كود قديمة.</li>
+      <li>يولّد المفاتيح، ويسحب صور code-interpreter ويشغّلها على شبكة LibreChat، دون فتح أي منفذ.</li>
+      <li>يأخذ نسخة احتياطية من قاعدة البيانات، ثم يضيف بعض الأسطر إلى آخر <code>.env</code> الخاص بـ LibreChat، ويعيد تشغيله مرة واحدة.</li>
+      <li>إن لم يرجع LibreChat خلال ثلاث دقائق، يعيد <code>.env</code> كما كان ويشغّله من جديد.</li>
+    </ul>
+    <div class="code">
+      <div class="code-bar"><span>install</span><button type="button" class="copy">نسخ</button></div>
+      <pre><code data-tpl="install"></code></pre>
+    </div>
+    <div class="expect"><span>النتيجة المتوقعة:</span> <span>جدول الخدمات، ثم <code>Done. Code execution is connected to LibreChat.</code></span></div>
+    <p class="aside">الموقع يتوقف بضع ثوانٍ فقط أثناء إعادة تشغيل LibreChat. شغّله في وقت هادئ.</p>
+    <div class="alert"><b>احفظ نسخة من <code>/opt/codeapi/.env</code> و<code>/opt/codeapi/librechat.env</code> خارج السيرفر.</b> كل منهما يحمل نصف زوج المفاتيح نفسه.</div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step" aria-labelledby="s3-title">
+    <div class="step-head">
+      <div class="num">3</div>
+      <h2 id="s3-title">فعّله في الوكيل وجرّبه</h2>
+      <div class="where">في المتصفح، على موقعك</div>
+    </div>
+    <p>افتح إعدادات الوكيل الذي سينشئ الملفات، وفعّل <b>تشغيل الكود</b> (Code Interpreter)، ثم احفظ.</p>
+    <ul class="checklist">
+      <li><label><input type="checkbox"><span>اطلب ملف Excel فيه جدول بسيط، فيظهر في الرد ويُحمَّل ويفتح.</span></label></li>
+      <li><label><input type="checkbox"><span>اطلب ملف Word أو PowerPoint، فيُحمَّل ويفتح.</span></label></li>
+      <li><label><input type="checkbox"><span>باقي الموقع يعمل كما كان: الدخول، والمحادثة، ولوحة <code>/admin</code>.</span></label></li>
+    </ul>
+  </section>
+
+  <!-- UPDATE -->
+  <section class="block" aria-labelledby="update-title">
+    <h2 id="update-title">التحديث لإصدار جديد من code-interpreter</h2>
+    <p>خذ SHA آخر تشغيل ناجح لـ Publish Images، بطوله الكامل (40 حرفاً)، ثم على السيرفر:</p>
+    <div class="code">
+      <div class="code-bar"><span>update code execution</span><button type="button" class="copy">نسخ</button></div>
+      <pre><code>cd /opt/codeapi
+grep '^CODEAPI_IMAGE_TAG=' install.sh          # write down the old SHA for rollback
+sudo sed -i "s/^CODEAPI_IMAGE_TAG=.*/CODEAPI_IMAGE_TAG=NEW_SHA/" install.sh
+sudo bash install.sh</code></pre>
+    </div>
+    <p class="aside">استبدل <code>NEW_SHA</code> قبل التشغيل. التحديث لا يعيد تشغيل LibreChat ولا يغيّر المفاتيح. للتراجع نفّذ نفس الأمرين الأخيرين بالـ SHA القديم. تحديث LibreChat نفسه يبقى كما هو في القسم 3.5 من <a href="workflow.md">workflow.md</a>.</p>
+  </section>
+
+  <!-- DAILY -->
+  <section class="block" aria-labelledby="daily-title">
+    <h2 id="daily-title">أوامر مفيدة</h2>
+    <p>من داخل <code>/opt/codeapi</code>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">المهمة</th><th scope="col">الأمر</th></tr></thead>
+        <tbody>
+          <tr><td>حالة خدمات تنفيذ الكود</td><td><code>sudo docker compose ps</code></td></tr>
+          <tr><td>سجلاتها</td><td><code>sudo docker compose logs --tail 80 codeapi service-worker sandbox-runner</code></td></tr>
+          <tr><td>إعادة تشغيلها</td><td><code>sudo docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TROUBLE -->
+  <section class="block" aria-labelledby="trouble-title">
+    <h2 id="trouble-title">إذا حدثت مشكلة</h2>
+    <p>السكربت آمن عند الإعادة: أصلح السبب وشغّله مرة أخرى. لن يغيّر المفاتيح، ولن يضيف الأسطر إلى <code>.env</code> مرتين.</p>
+    <div>
+      <details>
+        <summary><code>/dev/kvm is missing</code></summary>
+        <div><p>السيرفر لا يدعم KVM، فلا يعمل تنفيذ الكود. اطلب من المزوّد تفعيل nested virtualization، أو انقل تنفيذ الكود إلى سيرفر يدعمه.</p></div>
+      </details>
+      <details>
+        <summary><code>already sets: LIBRECHAT_CODE_BASEURL …</code></summary>
+        <div><p>في <code>.env</code> الخاص بـ LibreChat إعدادات تنفيذ كود سابقة، والرسالة تذكر أسماءها ومسار الملف. ضع <code>#</code> في أول كل سطر منها، ثم شغّل السكربت مرة أخرى.</p></div>
+      </details>
+      <details>
+        <summary><code>another code-interpreter is installed</code></summary>
+        <div><p>نسخة قديمة من code-interpreter تعمل على السيرفر. ادخل مجلدها وشغّل <code>sudo docker compose down</code>، فتتوقف وتبقى بياناتها، ثم شغّل السكربت مرة أخرى.</p></div>
+      </details>
+      <details>
+        <summary><code>the LibreChat image on this server is too old</code></summary>
+        <div><p>صورة LibreChat الحالية أقدم من دعم تنفيذ الكود. انشر أحدث وسم من <a href="https://github.com/waeldrwish/LibreChat/actions/workflows/arabic-admin-image.yml" target="_blank" rel="noopener">Arabic Admin Panel Image</a> بخطوات القسم 3.5 من workflow.md، ثم شغّل السكربت.</p></div>
+      </details>
+      <details>
+        <summary><code>pulling failed</code> مع <code>unauthorized</code> أو <code>denied</code></summary>
+        <div><p>الـ token غير صالح أو بلا صلاحية <code>read:packages</code>. سجّل الدخول بـ token جديد، ثم شغّل السكربت مرة أخرى:</p>
+          <div class="code"><div class="code-bar"><span>ghcr login</span><button type="button" class="copy">نسخ</button></div><pre><code>sudo docker login ghcr.io -u waeldrwish</code></pre></div>
+          <p>إن ظهر <code>not found</code> بدل ذلك، فبناء الصور لم ينتهِ أو فشل. راجع صفحة Publish Images.</p></div>
+      </details>
+      <details>
+        <summary>إنشاء الملفات لا يعمل</summary>
+        <div>
+          <p>تأكد أن «تشغيل الكود» مفعّل في الوكيل، ثم اقرأ السجلات من الجدول أعلاه. إن ظهر <code>not_yet_valid</code> فساعة السيرفر غير متزامنة، و<code>timedatectl</code> يجب أن يعرض <code>synchronized: yes</code>.</p>
+          <p>إن توقف بعد <code>docker compose down</code> ثم <code>up</code> في مجلد LibreChat، فأعد ربطه بالشبكة الجديدة:</p>
+          <div class="code"><div class="code-bar"><span>reconnect</span><button type="button" class="copy">نسخ</button></div><pre><code>cd /opt/codeapi &amp;&amp; sudo docker compose up -d --force-recreate codeapi</code></pre></div>
+        </div>
+      </details>
+      <details>
+        <summary>إزالة تنفيذ الكود بالكامل</summary>
+        <div>
+          <p>احذف من <code>.env</code> الخاص بـ LibreChat الأسطر من <code># &gt;&gt;&gt; code execution</code> حتى <code># &lt;&lt;&lt; code execution</code>، ثم:</p>
+          <div class="code"><div class="code-bar"><span>remove</span><button type="button" class="copy">نسخ</button></div><pre><code>sudo docker restart LibreChat
+cd /opt/codeapi &amp;&amp; sudo docker compose down</code></pre></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <p>الملفان في <code>deploy/codeapi/</code> بالمستودع: <code>docker-compose.yml</code> و<code>install.sh</code>.</p>
+  </footer>
+
+</div>
+
+<!-- Command templates. {{KEY}} placeholders are filled from the form. -->
+<script type="text/plain" id="tpl-copy">
+ssh -t {{USER}}@{{IP}} 'sudo mkdir -p /opt/codeapi && sudo chown $(whoami) /opt/codeapi'
+cd D:\Projects\libre_ai\LibreChat\deploy\codeapi
+scp docker-compose.yml install.sh {{USER}}@{{IP}}:/opt/codeapi/
+</script>
+
+<script type="text/plain" id="tpl-install">
+ssh {{USER}}@{{IP}}
+cd /opt/codeapi && sudo bash install.sh
+</script>
+
+<script>
+(function () {
+  var STORE = 'librechat-codeapi-setup-v1';
+  var DEFAULTS = { ip: '203.0.113.10', user: 'root' };
+  var IP_RE = /^(\d{1,3}(\.\d{1,3}){3}|[0-9a-f:]{2,39}|([a-z0-9-]+\.)*[a-z0-9-]+)$/i;
+  var USER_RE = /^[a-z_][a-z0-9_-]{0,31}$/i;
+
+  function el(id) { return document.getElementById(id); }
+  function read() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
+  function write(v) { try { localStorage.setItem(STORE, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+
+  var saved = read();
+  Object.keys(DEFAULTS).forEach(function (k) { if (typeof saved[k] === 'string') el(k).value = saved[k]; });
+
+  function check(name, ok, errText) {
+    var input = el(name);
+    var msg = el(name + '-msg');
+    if (!msg.dataset.base) msg.dataset.base = msg.innerHTML;
+    input.setAttribute('aria-invalid', ok ? 'false' : 'true');
+    if (ok) { msg.innerHTML = msg.dataset.base; msg.classList.remove('err'); }
+    else { msg.textContent = errText; msg.classList.add('err'); }
+  }
+
+  function render() {
+    var v = { ip: el('ip').value.trim(), user: el('user').value.trim() };
+    var ipOk = IP_RE.test(v.ip);
+    var userOk = USER_RE.test(v.user);
+    check('ip', ipOk, 'اكتب عنوان IP مثل 203.0.113.10.');
+    check('user', userOk, 'اسم مستخدم غير صالح.');
+    el('ip-tag').hidden = v.ip !== '203.0.113.10';
+
+    var map = { IP: ipOk ? v.ip : 'INVALID-IP', USER: userOk ? v.user : 'INVALID-USER' };
+    document.querySelectorAll('[data-tpl]').forEach(function (code) {
+      var tpl = el('tpl-' + code.dataset.tpl).textContent.replace(/^\s*\n/, '').replace(/\s+$/, '');
+      code.textContent = tpl.replace(/\{\{([A-Z]+)\}\}/g, function (m, k) { return map[k] || m; });
+    });
+    document.querySelectorAll('.js-prompt').forEach(function (n) { n.textContent = map.USER + '@server:/opt/codeapi$'; });
+    write(v);
+  }
+
+  ['ip', 'user'].forEach(function (k) { el(k).addEventListener('input', render); });
+  el('values-form').addEventListener('submit', function (e) { e.preventDefault(); });
+
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    var label = btn.textContent;
+    btn.addEventListener('click', function () {
+      var code = btn.closest('.code').querySelector('code');
+      function flash(msg, ok) {
+        btn.textContent = msg;
+        btn.classList.toggle('is-ok', ok);
+        clearTimeout(btn._t);
+        btn._t = setTimeout(function () { btn.textContent = label; btn.classList.remove('is-ok'); }, 1800);
+      }
+      function selectFallback() {
+        var range = document.createRange();
+        range.selectNodeContents(code);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        flash('محدد: اضغط Ctrl+C', false);
+      }
+      try {
+        if (!navigator.clipboard) return selectFallback();
+        navigator.clipboard.writeText(code.textContent).then(function () { flash('تم النسخ', true); }, selectFallback);
+      } catch (e) {
+        selectFallback();
+      }
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

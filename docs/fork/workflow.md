@@ -276,6 +276,8 @@ docker compose build api
 
 ## 3. النشر على السيرفر
 
+تنفيذ الكود (code-interpreter) يُضاف إلى السيرفر الحالي بملفات `deploy/codeapi/` في مجلد منفصل `/opt/codeapi`، وخطواته في [production-setup.html](production-setup.html). لا يغيّر شيئاً في نشر LibreChat الموصوف أدناه.
+
 ### 3.1 المسار
 
 ```text
