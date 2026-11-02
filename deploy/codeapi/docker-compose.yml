@@ -115,6 +115,23 @@ services:
   sandbox-runner:
     image: ghcr.io/waeldrwish/codeapi-sandbox-runner:${CODEAPI_IMAGE_TAG:?run install.sh first}
     restart: unless-stopped
+    # Compose service names do not resolve inside the microVM: generated files never reached
+    # http://egress_gateway:3190 (FailedToOpenSocket) although the port was open from this
+    # container. Resolve the gateway here and hand the VM its address instead of its name.
+    # The loop waits for the gateway, which can start after this container on a reboot.
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        for _ in $$(seq 1 60); do
+          ip=$$(getent ahostsv4 egress_gateway | awk 'NR == 1 { print $$1 }')
+          [ -n "$$ip" ] && break
+          sleep 1
+        done
+        [ -n "$$ip" ] || { echo "cannot resolve egress_gateway" >&2; exit 1; }
+        echo "egress gateway at $$ip:3190"
+        export EGRESS_GATEWAY_URL=http://$$ip:3190 SANDBOX_FORWARD_TARGET=$$ip:3190
+        exec /usr/local/bin/entrypoint.sh
     privileged: false
     devices:
       - /dev/kvm:/dev/kvm
