@@ -2,8 +2,10 @@ import React, { memo, useMemo, useRef, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useToastContext } from '@librechat/client';
 import { PermissionTypes, Permissions, apiBaseUrl } from 'librechat-data-provider';
+import type { TFile, TAttachmentMetadata } from 'librechat-data-provider';
 import {
   handleDoubleClick,
+  isSandboxUrl,
   triggerDownload,
   resolveInlineMedia,
   toAbsoluteFilePath,
@@ -13,6 +15,7 @@ import { useCodeBlockContext, useMediaContext } from '~/Providers';
 import CodeBlock from '~/components/Messages/Content/CodeBlock';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
 import { useFileDownload } from '~/data-provider';
+import LogLink from './Parts/LogLink';
 import { useLocalize } from '~/hooks';
 import store from '~/store';
 
@@ -118,6 +121,11 @@ export const a: React.ElementType = memo(function MarkdownAnchor({ href, childre
   const user = useRecoilValue(store.user);
   const { showToast } = useToastContext();
   const localize = useLocalize();
+  /** `[report](sandbox:/mnt/data/report.docx)` names a file the run produced,
+   *  not an address. Left as written, the browser resolves it against the
+   *  site and the link opens the chat page instead of the file. */
+  const { filesByName } = useMediaContext();
+  const attachment = useMemo(() => resolveInlineMedia(href, filesByName), [href, filesByName]);
 
   const {
     file_id = '',
@@ -138,6 +146,26 @@ export const a: React.ElementType = memo(function MarkdownAnchor({ href, childre
 
   const { refetch: downloadFile } = useFileDownload(user?.id ?? '', file_id, { direct: false });
   const props: { target?: string; onClick?: React.MouseEventHandler } = { target: '_blank' };
+
+  if (attachment != null) {
+    const file = attachment as TFile & TAttachmentMetadata;
+    return (
+      <LogLink
+        href={file.filepath ?? ''}
+        filename={file.filename ?? ''}
+        file_id={file.file_id}
+        user={file.user}
+        source={file.source}
+      >
+        {children}
+      </LogLink>
+    );
+  }
+
+  /** A sandbox file this turn did not deliver has nothing to link to. */
+  if (isSandboxUrl(href)) {
+    return <>{children}</>;
+  }
 
   if (!file_id || !filename) {
     return (

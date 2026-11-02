@@ -14,6 +14,9 @@ const ABSOLUTE_SOURCE_PATTERN = /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i;
  */
 const SERVED_PATH_PATTERN = /^\/(?:images|api)\//i;
 
+/** `sandbox:/mnt/data/report.docx`; see `isSandboxUrl`. */
+const SANDBOX_SCHEME_PATTERN = /^sandbox:/i;
+
 /** Shared instance so the overwhelmingly common "no attachments" turn keeps a
  *  referentially stable map, and every consumer memoized on it stays put. */
 const EMPTY_ATTACHMENTS_BY_NAME: ReadonlyMap<string, TAttachment> = new Map<string, TAttachment>();
@@ -101,8 +104,8 @@ export function attachmentRenderKey(attachment: TAttachment): string | undefined
 }
 
 /**
- * Indexes a turn's attachments by the filename a markdown image would name
- * them with.
+ * Indexes the fetchable attachments `accept` admits by the filename a
+ * markdown reference would name them with.
  *
  * A basename naming more than one STORED FILE is ambiguous and is dropped.
  * Nothing in `![...](output.png)` says which one the author meant, and picking
@@ -110,13 +113,6 @@ export function attachmentRenderKey(attachment: TAttachment): string | undefined
  * than not rendering. Dropping the name costs little: the reference renders as
  * it does today, and the media row, which never lost either file, is where
  * both stay visible.
- *
- * Only files an `<img>` can display are indexed — an image extension and a
- * fetchable path. Deliberately NOT `isImageAttachment`, which additionally
- * demands width and height: those exist so `<Image>` can reserve layout space,
- * and a markdown `<img>` needs neither. Requiring them would drop the
- * download-fallback an oversized output produces, which carries an image name
- * and a working URL and displays perfectly well.
  *
  * Identity is the stored file (`file_id ?? filepath`), not the call that
  * emitted it. One file surfacing under two calls — inherited across steps, or
@@ -127,13 +123,14 @@ export function attachmentRenderKey(attachment: TAttachment): string | undefined
  * `output.png` are indistinguishable from the metadata, so that guess could
  * only ever have been right by luck.
  */
-export function buildAttachmentsByName(
+function indexByName(
   attachments: ReadonlyArray<TAttachment> | undefined,
+  accept: (attachment: TAttachment) => boolean,
 ): ReadonlyMap<string, TAttachment> {
   const byName = new Map<string, TAttachment>();
   const ambiguous = new Set<string>();
   for (const attachment of attachments ?? []) {
-    if (!attachment?.filepath || !imageExtRegex.test(attachment.filename ?? '')) {
+    if (!attachment?.filepath || !accept(attachment)) {
       continue;
     }
     const key = mediaNameKey(attachment.filename ?? '');
@@ -156,6 +153,35 @@ export function buildAttachmentsByName(
 }
 
 /**
+ * Indexes a turn's attachments by the filename a markdown image would name
+ * them with.
+ *
+ * Only files an `<img>` can display are indexed — an image extension and a
+ * fetchable path. Deliberately NOT `isImageAttachment`, which additionally
+ * demands width and height: those exist so `<Image>` can reserve layout space,
+ * and a markdown `<img>` needs neither. Requiring them would drop the
+ * download-fallback an oversized output produces, which carries an image name
+ * and a working URL and displays perfectly well.
+ */
+export function buildAttachmentsByName(
+  attachments: ReadonlyArray<TAttachment> | undefined,
+): ReadonlyMap<string, TAttachment> {
+  return indexByName(attachments, (attachment) => imageExtRegex.test(attachment.filename ?? ''));
+}
+
+/**
+ * Indexes every file a turn produced by the filename a markdown link would
+ * name it with. A model asked for a document writes
+ * `[report.docx](sandbox:/mnt/data/report.docx)` — a name, not an address —
+ * and the anchor resolves it here so the link downloads that file.
+ */
+export function buildFilesByName(
+  attachments: ReadonlyArray<TAttachment> | undefined,
+): ReadonlyMap<string, TAttachment> {
+  return indexByName(attachments, () => true);
+}
+
+/**
  * Absolute URL for a stored file path.
  *
  * Root-relative paths the app serves itself — `/images/…` uploads and `/api/…`
@@ -173,24 +199,32 @@ export function toAbsoluteFilePath(path: string, baseUrl: string): string {
 }
 
 /**
- * Lookup key for a markdown image destination, or `''` when the source is
- * already an address rather than a name — anything carrying a scheme, or a
+ * Whether a markdown destination uses the `sandbox:` scheme that models
+ * trained on ChatGPT put on files they produced. The markdown pipeline keeps
+ * this one scheme (react-markdown's default `urlTransform` blanks it) so the
+ * `a` and `img` components can resolve it against the turn's attachments.
+ */
+export function isSandboxUrl(url: string | undefined): boolean {
+  return SANDBOX_SCHEME_PATTERN.test(url ?? '');
+}
+
+/**
+ * Lookup key for a markdown destination, or `''` when the source is already
+ * an address rather than a name — anything carrying a scheme, or a
  * root-relative path this app serves.
  *
- * A scheme is never looked up, `sandbox:` included. react-markdown's default
- * `urlTransform` allows only http/https/irc/mailto/xmpp, so a `sandbox:`
- * source is blanked before the image component ever sees it; treating it as a
- * name here would claim a file the renderer cannot display. Supporting that
- * form needs a `urlTransform` on the markdown pipeline first. The last case matters: an author writing
- * `/api/files/…/chart.png` addressed one specific file, and reducing that to
- * `chart.png` could resolve it to a different attachment sharing the leaf and
- * display the wrong image.
+ * `sandbox:` is the one scheme that is looked up: it only ever names a file in
+ * the run's sandbox, so `sandbox:/mnt/data/chart.png` is `/mnt/data/chart.png`.
+ * The served paths matter: an author writing `/api/files/…/chart.png`
+ * addressed one specific file, and reducing that to `chart.png` could resolve
+ * it to a different attachment sharing the leaf and display the wrong image.
  */
 function mediaKeyFromSource(src: string): string {
-  if (ABSOLUTE_SOURCE_PATTERN.test(src) || SERVED_PATH_PATTERN.test(src)) {
+  const path = src.replace(SANDBOX_SCHEME_PATTERN, '');
+  if (ABSOLUTE_SOURCE_PATTERN.test(path) || SERVED_PATH_PATTERN.test(path)) {
     return '';
   }
-  let decoded = src;
+  let decoded = path;
   try {
     decoded = decodeURIComponent(src);
   } catch {
@@ -200,7 +234,7 @@ function mediaKeyFromSource(src: string): string {
 }
 
 /**
- * The attachment a markdown image source refers to, or `undefined` when the
+ * The attachment a markdown image source or link refers to, or `undefined` when the
  * source is already resolvable or names nothing this turn produced — in which
  * case the caller keeps its existing behavior.
  */

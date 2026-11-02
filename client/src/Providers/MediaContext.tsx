@@ -9,6 +9,11 @@ type MediaContext = {
    * markdown renderer resolves the reference through this map.
    */
   attachmentsByName?: ReadonlyMap<string, TAttachment>;
+  /**
+   * Every file the turn produced, by name, for markdown links: a model that
+   * writes `[report](sandbox:/mnt/data/report.docx)` means that attachment.
+   */
+  filesByName?: ReadonlyMap<string, TAttachment>;
 };
 
 export const MediaContext = createContext<MediaContext>({});

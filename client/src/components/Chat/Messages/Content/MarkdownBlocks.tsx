@@ -1,11 +1,18 @@
 import React, { memo, useMemo, useState, useLayoutEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import type { PluggableList } from 'unified';
 import type { ElementType } from 'react';
 import type { MarkdownSplitter } from './splitMarkdown';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
 import { createMarkdownSplitter } from './splitMarkdown';
 import { createFadePlugin } from './animate';
+import { isSandboxUrl } from '~/utils';
+
+/** Keeps `sandbox:` destinations, which the default transform blanks, so the
+ *  `a` and `img` components can resolve them to the turn's files. */
+function urlTransform(url: string): string {
+  return isSandboxUrl(url) ? url : defaultUrlTransform(url);
+}
 
 type SharedProps = {
   remarkPlugins: PluggableList;
@@ -69,6 +76,7 @@ const MarkdownBlock = memo(
             /** @ts-ignore */
             rehypePlugins={blockRehypePlugins}
             components={components}
+            urlTransform={urlTransform}
           >
             {content}
           </ReactMarkdown>

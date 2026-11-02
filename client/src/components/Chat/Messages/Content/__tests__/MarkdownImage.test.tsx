@@ -36,14 +36,8 @@ describe('markdown img', () => {
     expect(renderImage('/mnt/data/5_dti.png', [chart])).toHaveAttribute('src', served);
   });
 
-  it('leaves a sandbox: scheme unresolved', () => {
-    // react-markdown's default urlTransform allows only http/https/irc/mailto/
-    // xmpp, so this source is blanked before `img` is called at all. Resolving
-    // it here would only be reachable from a test that skips the pipeline.
-    expect(renderImage('sandbox:/mnt/data/5_dti.png', [chart])).toHaveAttribute(
-      'src',
-      'sandbox:/mnt/data/5_dti.png',
-    );
+  it('resolves the sandbox: scheme the markdown pipeline keeps', () => {
+    expect(renderImage('sandbox:/mnt/data/5_dti.png', [chart])).toHaveAttribute('src', served);
   });
 
   it('keeps an explicitly addressed server path over a same-named attachment', () => {

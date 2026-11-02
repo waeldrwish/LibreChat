@@ -3,6 +3,8 @@ import {
   attachmentIdentity,
   attachmentRenderKey,
   buildAttachmentsByName,
+  buildFilesByName,
+  isSandboxUrl,
   resolveInlineMedia,
   toAbsoluteFilePath,
 } from '~/utils/media';
@@ -109,6 +111,40 @@ describe('buildAttachmentsByName', () => {
   });
 });
 
+describe('buildFilesByName', () => {
+  it('indexes documents as well as images', () => {
+    const report = attachment({ filename: 'report.docx', file_id: 'r1' } as Partial<TAttachment>);
+    const chart = attachment({ file_id: 'c1' } as Partial<TAttachment>);
+    const byName = buildFilesByName([report, chart]);
+    expect(byName.get('report.docx')).toBe(report);
+    expect(byName.get('5_dti.png')).toBe(chart);
+    expect(buildAttachmentsByName([report]).get('report.docx')).toBeUndefined();
+  });
+
+  it('refuses a basename two stored files claim', () => {
+    const left = attachment({ filename: 'report.docx', file_id: 'r1' } as Partial<TAttachment>);
+    const right = attachment({ filename: 'report.docx', file_id: 'r2' } as Partial<TAttachment>);
+    expect(buildFilesByName([left, right]).get('report.docx')).toBeUndefined();
+  });
+
+  it('skips a record with no fetchable path', () => {
+    const pending = attachment({ filename: 'report.docx', filepath: '' });
+    expect(buildFilesByName([pending]).size).toBe(0);
+  });
+});
+
+describe('isSandboxUrl', () => {
+  it.each([
+    ['sandbox:/mnt/data/report.docx', true],
+    ['SANDBOX:/mnt/data/report.docx', true],
+    ['/mnt/data/report.docx', false],
+    ['https://example.com/sandbox:', false],
+    [undefined, false],
+  ])('%s -> %s', (url, expected) => {
+    expect(isSandboxUrl(url)).toBe(expected);
+  });
+});
+
 describe('resolveInlineMedia', () => {
   const file = attachment();
   const byName = buildAttachmentsByName([file]);
@@ -116,6 +152,7 @@ describe('resolveInlineMedia', () => {
   it.each([
     ['a bare filename', '5_dti.png'],
     ['a sandbox path', '/mnt/data/5_dti.png'],
+    ['a sandbox scheme', 'sandbox:/mnt/data/5_dti.png'],
     ['a percent-encoded name', '5%5Fdti.png'],
     ['a cache-busting query', '5_dti.png?v=2'],
   ])('resolves %s', (_label, src) => {
@@ -126,7 +163,7 @@ describe('resolveInlineMedia', () => {
     ['an absolute URL', 'https://example.com/5_dti.png'],
     ['a data URI', 'data:image/png;base64,AAAA'],
     ['a protocol-relative URL', '//cdn.example.com/5_dti.png'],
-    ['a sandbox scheme', 'sandbox:/mnt/data/5_dti.png'],
+    ['a sandbox scheme wrapping an address', 'sandbox:https://example.com/5_dti.png'],
     ['an explicit /api/ path', '/api/files/other/session/5_dti.png'],
     ['an explicit /images/ path', '/images/user/5_dti.png'],
   ])('leaves %s alone', (_label, src) => {
