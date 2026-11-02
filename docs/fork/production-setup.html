@@ -303,7 +303,7 @@ footer p { margin: 0; }
     </div>
     <p>يسألك عن token الـ GitHub مرة واحدة، ثم يكمل وحده:</p>
     <ul>
-      <li>يجد حاوية LibreChat وملف <code>.env</code> الخاص بها وحده، ويتوقف دون أي تغيير إن وجد إعدادات تنفيذ كود قديمة.</li>
+      <li>يجد حاوية LibreChat وملف <code>.env</code> الخاص بها وحده، ويتوقف دون أي تغيير إن وجد نسخة قديمة من code-interpreter تعمل.</li>
       <li>يولّد المفاتيح، ويسحب صور code-interpreter ويشغّلها على شبكة LibreChat، دون فتح أي منفذ.</li>
       <li>يأخذ نسخة احتياطية من قاعدة البيانات، ثم يضيف بعض الأسطر إلى آخر <code>.env</code> الخاص بـ LibreChat، ويعيد تشغيله مرة واحدة.</li>
       <li>إن لم يرجع LibreChat خلال ثلاث دقائق، يعيد <code>.env</code> كما كان ويشغّله من جديد.</li>
@@ -372,12 +372,8 @@ sudo bash install.sh</code></pre>
         <div><p>السيرفر لا يدعم KVM، فلا يعمل تنفيذ الكود. اطلب من المزوّد تفعيل nested virtualization، أو انقل تنفيذ الكود إلى سيرفر يدعمه.</p></div>
       </details>
       <details>
-        <summary><code>already sets: LIBRECHAT_CODE_BASEURL …</code></summary>
-        <div><p>في <code>.env</code> الخاص بـ LibreChat إعدادات تنفيذ كود سابقة، والرسالة تذكر أسماءها ومسار الملف. ضع <code>#</code> في أول كل سطر منها، ثم شغّل السكربت مرة أخرى.</p></div>
-      </details>
-      <details>
-        <summary><code>another code-interpreter is installed</code></summary>
-        <div><p>نسخة قديمة من code-interpreter تعمل على السيرفر. ادخل مجلدها وشغّل <code>sudo docker compose down</code>، فتتوقف وتبقى بياناتها، ثم شغّل السكربت مرة أخرى.</p></div>
+        <summary><code>an older code-interpreter runs on this machine</code></summary>
+        <div><p>نسخة قديمة من code-interpreter تعمل على السيرفر. الرسالة تطبع أمر إيقافها بمسار مجلدها: انسخه وشغّله، فتتوقف وتبقى بياناتها، ثم شغّل السكربت مرة أخرى. إعدادات تنفيذ الكود القديمة في <code>.env</code> الخاص بـ LibreChat يعطّلها السكربت وحده بوضع <code>#</code> أمامها، ويحفظ نسخة من الملف قبل ذلك في <code>/opt/codeapi/backups</code>.</p></div>
       </details>
       <details>
         <summary><code>the LibreChat image on this server is too old</code></summary>

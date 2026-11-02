@@ -56,16 +56,20 @@ Deploy a recent librechat-arabic-admin tag first (workflow.md, section 3.5)."
 
 LINKED=false
 grep -qxF "$MARK_BEGIN" "$LC_ENV" && LINKED=true
-if ! $LINKED; then
-  OLD=$(grep -oE '^[[:space:]]*(LIBRECHAT_CODE_BASEURL|CODEAPI_[A-Z_]+)=' "$LC_ENV" | tr -d ' =' | tr '\n' ' ' || true)
-  [ -z "$OLD" ] || fail "$LC_ENV already sets: $OLD
-Nothing was changed. If those lines belong to an old setup, put # in front of them and run this again."
-fi
+# Code-execution lines from an older setup; they are commented out when LibreChat is connected.
+OLD_RE='^[[:space:]]*(LIBRECHAT_CODE_BASEURL|CODEAPI_[A-Z_]+)='
 
 OTHER=$(docker ps -a --filter label=com.docker.compose.service=sandbox-runner \
-  --format '{{.Label "com.docker.compose.project"}}' | grep -vx codeapi || true)
-[ -z "$OTHER" ] || fail "another code-interpreter is installed (Compose project: $OTHER). Nothing was changed. \
-Stop it in its folder with 'docker compose down' (its data is kept), then run this again."
+  --format '{{.Label "com.docker.compose.project"}} {{.Label "com.docker.compose.project.working_dir"}}' \
+  | grep -v '^codeapi ' | sort -u | head -n1 || true)
+if [ -n "$OTHER" ]; then
+  read -r OTHER_PROJECT OTHER_DIR <<<"$OTHER"
+  [ "$OTHER_PROJECT" != "$LC_PROJECT" ] || fail "LibreChat's own Compose files in $OTHER_DIR also run a \
+code-interpreter. Nothing was changed. Remove those services from them, then run this again."
+  fail "an older code-interpreter runs on this machine. Nothing was changed.
+Stop it (its data is kept), then run this again:
+  cd $OTHER_DIR && sudo docker compose down"
+fi
 
 if [ -f .env ] && [ ! -f librechat.env ]; then
   fail "$DIR/librechat.env is missing. Restore it from your copy, or move .env away to start over."
@@ -198,7 +202,12 @@ if ! $LINKED; then
   cp -p "$LC_ENV" "$B/librechat-dot-env.before"
 
   echo "==> Connecting LibreChat and restarting it"
-  # Append in place: the file is bind-mounted into the container.
+  # Write in place, never replace the file: it is bind-mounted into the container.
+  if grep -qE "$OLD_RE" "$LC_ENV"; then
+    echo "    commenting out the old code-execution lines:"
+    grep -nE "$OLD_RE" "$LC_ENV" | cut -d= -f1 | sed 's/^/      line /'
+    sed -E "s/($OLD_RE)/# replaced by codeapi\/install.sh: \1/" "$B/librechat-dot-env.before" > "$LC_ENV"
+  fi
   [ -z "$(tail -c1 "$LC_ENV")" ] || echo >> "$LC_ENV"
   cat librechat.env >> "$LC_ENV"
   docker restart LibreChat >/dev/null
