@@ -39,6 +39,10 @@ else
   LC_NETWORK=$(head -n1 <<<"$LC_NETWORKS")
 fi
 [ -n "$LC_NETWORK" ] || fail "LibreChat is not on a Docker network"
+case $LC_NETWORK in
+  bridge | host | none) fail "LibreChat runs on Docker's '$LC_NETWORK' network, which code execution cannot \
+join. Start LibreChat with docker compose, then run this again." ;;
+esac
 
 LC_ENV=$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/app/.env"}}{{.Source}}{{end}}{{end}}' LibreChat)
 [ -n "$LC_ENV" ] && [ -f "$LC_ENV" ] \
@@ -157,12 +161,27 @@ sed -i -e "s/^CODEAPI_IMAGE_TAG=.*/CODEAPI_IMAGE_TAG=$CODEAPI_IMAGE_TAG/" \
 
 # ------------------------------------------------------------------------ start
 echo "==> Pulling images"
-docker compose pull || fail "pulling failed. If the message says 'unauthorized' or 'denied', log in again \
-with a token that has the read:packages scope: docker login ghcr.io -u waeldrwish"
+# The images are large; a retry keeps the layers that already arrived.
+for try in 1 2 3; do
+  docker compose pull && break
+  [ "$try" = 3 ] && fail "pulling failed. If the message says 'unauthorized' or 'denied', log in again \
+with a token that has the read:packages scope: docker login ghcr.io -u waeldrwish. \
+Otherwise check the internet connection and run this again."
+  echo "==> Pulling failed, retrying in 10 seconds"
+  sleep 10
+done
 
 echo "==> Starting code execution"
-docker compose up -d \
-  || fail "code execution did not start. Read: docker compose logs --tail 100 sandbox-runner egress_gateway"
+# --force-recreate re-attaches the containers when a `docker compose down` in LibreChat's folder
+# has recreated its network.
+UP_LOG=$(mktemp)
+trap 'rm -f "$UP_LOG"' EXIT
+if ! docker compose up -d --force-recreate 2>&1 | tee "$UP_LOG"; then
+  grep -q 'non-overlapping' "$UP_LOG" && fail "Docker has no free address range for a new network \
+(this machine has $(docker network ls -q | wc -l) Docker networks). Remove the networks that no running \
+container uses with 'docker network prune', then run this again."
+  fail "code execution did not start. Read: docker compose logs --tail 100 sandbox-runner egress_gateway"
+fi
 wait_for docker exec LibreChat wget -qO- http://codeapi:3112/v1/health \
   || fail "LibreChat cannot reach the code service. Read: docker compose logs --tail 100 codeapi"
 
