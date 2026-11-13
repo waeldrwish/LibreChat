@@ -603,7 +603,7 @@ if (cluster.isMaster) {
       const saneLang = escapeHtmlAttribute(lang);
       let updatedIndexHtml = indexShell(req, res).replace(
         /<html lang="[^"]*"/,
-        () => `lang="${saneLang}"`,
+        () => `<html lang="${saneLang}"`,
       );
       updatedIndexHtml = maybeInjectQueryDevtoolsBootstrap(updatedIndexHtml, req);
 

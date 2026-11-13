@@ -98,7 +98,11 @@ function Login() {
             oauthPath="openid"
             Icon={() =>
               startupConfig.openidImageUrl ? (
-                <img src={startupConfig.openidImageUrl} alt="OpenID Logo" className="h-5 w-5" />
+                <img
+                  src={startupConfig.openidImageUrl}
+                  alt={localize('com_auth_openid_logo_alt')}
+                  className="h-5 w-5"
+                />
               ) : (
                 <OpenIDIcon />
               )

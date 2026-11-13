@@ -40,7 +40,7 @@ export default function AssistantTool({
           onSuccess: () => {
             const fns = getValues('functions').filter((fn) => fn !== tool);
             setValue('functions', fns);
-            showToast({ message: 'Tool deleted successfully', status: 'success' });
+            showToast({ message: localize('com_ui_delete_tool_success'), status: 'success' });
           },
         },
       );

@@ -91,7 +91,11 @@ function SocialLoginRender({
         oauthPath="openid"
         Icon={() =>
           startupConfig.openidImageUrl ? (
-            <img src={startupConfig.openidImageUrl} alt="OpenID Logo" className="h-5 w-5" />
+            <img
+              src={startupConfig.openidImageUrl}
+              alt={localize('com_auth_openid_logo_alt')}
+              className="h-5 w-5"
+            />
           ) : (
             <OpenIDIcon />
           )
@@ -108,7 +112,11 @@ function SocialLoginRender({
         oauthPath="saml"
         Icon={() =>
           startupConfig.samlImageUrl ? (
-            <img src={startupConfig.samlImageUrl} alt="SAML Logo" className="h-5 w-5" />
+            <img
+              src={startupConfig.samlImageUrl}
+              alt={localize('com_auth_saml_logo_alt')}
+              className="h-5 w-5"
+            />
           ) : (
             <SamlIcon />
           )

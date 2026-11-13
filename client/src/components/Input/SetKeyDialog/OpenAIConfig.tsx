@@ -1,6 +1,7 @@
 import { EModelEndpoint } from 'librechat-data-provider';
 import { useFormContext, Controller } from 'react-hook-form';
 import InputWithLabel from './InputWithLabel';
+import { useLocalize } from '~/hooks';
 
 const OpenAIConfig = ({
   endpoint,
@@ -11,6 +12,7 @@ const OpenAIConfig = ({
 }) => {
   const { control } = useFormContext();
   const isAzure = endpoint === EModelEndpoint.azureOpenAI;
+  const localize = useLocalize();
   return (
     <form className="flex-wrap">
       {!isAzure && (
@@ -38,7 +40,7 @@ const OpenAIConfig = ({
               <InputWithLabel
                 id="azureOpenAIApiKey"
                 {...field}
-                label={'Azure OpenAI API Key'}
+                label={localize('com_ui_azure_openai_api_key')}
                 labelClassName="mb-1"
                 secret
               />
@@ -52,7 +54,7 @@ const OpenAIConfig = ({
               <InputWithLabel
                 id="azureOpenAIApiInstanceName"
                 {...field}
-                label={'Azure OpenAI Instance Name'}
+                label={localize('com_ui_azure_openai_instance_name')}
                 labelClassName="mb-1"
               />
             )}
@@ -65,7 +67,7 @@ const OpenAIConfig = ({
               <InputWithLabel
                 id="azureOpenAIApiDeploymentName"
                 {...field}
-                label={'Azure OpenAI Deployment Name'}
+                label={localize('com_ui_azure_openai_deployment_name')}
                 labelClassName="mb-1"
               />
             )}
@@ -78,7 +80,7 @@ const OpenAIConfig = ({
               <InputWithLabel
                 id="azureOpenAIApiVersion"
                 {...field}
-                label={'Azure OpenAI API Version'}
+                label={localize('com_ui_azure_openai_api_version')}
                 labelClassName="mb-1"
               />
             )}

@@ -319,7 +319,7 @@ const AgentGrid: React.FC<AgentGridProps> = ({
   if (failure) {
     const errorCard = (
       <ErrorDisplay
-        error={(failure as ApiError) || 'Unknown error occurred'}
+        error={(failure as ApiError) || localize('com_ui_unknown_error')}
         /* A cursor page that failed is not in the cache, so `refetch` would refresh the
            prefix that already succeeded and leave it missing. Retry the page the failure
            was waiting for. `cancelRefetch: false` so a click, the card's backoff and the
