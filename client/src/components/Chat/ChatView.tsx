@@ -19,7 +19,6 @@ import type { ChatFormValues } from '~/common';
 import { AddedChatContext, ChatFormProvider, useChatContext, useFileMapContext } from '~/Providers';
 import { AssistantsMapContext, useAssistantsMapContext } from '~/Providers/AssistantsMapContext';
 import { AgentsMapContext, useAgentsMapContext } from '~/Providers/AgentsMapContext';
-import Footer, { useLandingFooter, useConfiguredFooter } from './Footer';
 import PendingSteers from './Messages/Content/Parts/PendingSteers';
 import { useChatSettings } from '~/Providers/ChatSettingsContext';
 import ApprovalProvider from './Messages/Content/ApprovalContext';
@@ -54,22 +53,6 @@ type ChatViewProps = {
   historyReady?: boolean;
 };
 
-/**
- * The generic disclaimer and the policy links are the welcome screen's, where the deployment
- * places them; a deployment's own footer stays with the conversation that always showed it.
- */
-function renderFooter(placement: 'full' | 'composer' | 'band') {
-  if (placement === 'band') {
-    return <Footer configuredOnly />;
-  }
-  if (placement === 'composer') {
-    return (
-      <Footer className="text-text-muted hidden flex-wrap items-center justify-center gap-2 px-2 pb-2 text-center text-xs sm:flex" />
-    );
-  }
-  return <Footer />;
-}
-
 function ChatViewPane({
   index = 0,
   project,
@@ -95,12 +78,6 @@ function ChatViewPane({
   /** The welcome screen reserves the message column's scrollbar band before any
    *  column exists to measure it (see the column classes in `ChatPane`). */
   useScrollbarGutterSeed();
-
-  /** A conversation carries a footer only for configured content, and the
-   *  composer's clearance has to account for the bar when it does, including
-   *  before the config answers, so a cold load does not jump. */
-  const configuredFooter = useConfiguredFooter();
-  const landingFooter = useLandingFooter();
 
   const methods = useForm<ChatFormValues>({
     defaultValues: { text: '' },
@@ -162,8 +139,8 @@ function ChatViewPane({
                             fileMap={fileMap}
                             isLoading={isLoading}
                             project={project}
-                            landingFooter={landingFooter}
-                            configuredFooter={configuredFooter}
+                            landingFooter={false}
+                            configuredFooter={false}
                             renderHeader={({ parentConversationId, readOnly }) => (
                               <Header
                                 parentConversationId={parentConversationId}
@@ -197,7 +174,6 @@ function ChatViewPane({
                                 centerFormOnLanding={centerFormOnLanding}
                               />
                             )}
-                            renderFooter={renderFooter}
                             renderMascot={(bandRef, landing) => (
                               <Lia
                                 bandRef={bandRef}

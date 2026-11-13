@@ -41,7 +41,6 @@ import { hasAnalyticsGtmId } from '~/store/analytics';
 import AppChatSurface from '../Chat/Surface';
 import { ShareContext } from '~/Providers';
 import MessagesView from './MessagesView';
-import Footer from '../Chat/Footer';
 import store from '~/store';
 
 /** Root sibling-index key used by the shared MessagesView/MultiMessage tree. */
@@ -231,20 +230,10 @@ function SharedView() {
     );
   }
 
-  const footer = (
-    <div className="from-presentation pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-40% to-transparent">
-      <Footer
-        startupConfig={config ?? null}
-        className="text-text-secondary pointer-events-auto relative mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-2 px-3 pt-6 pb-4 text-center text-xs"
-      />
-    </div>
-  );
-
   const mainContent = (
     <div className="bg-presentation relative flex h-full w-full flex-1 flex-col items-stretch overflow-hidden pt-0">
       <div className="text-text-primary relative flex h-full min-h-0 flex-col" role="presentation">
         {content}
-        {footer}
         <AnalyticsConsent
           gtmId={config?.analyticsGtmId}
           consentRequired={config?.interface?.analyticsConsent !== false}

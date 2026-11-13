@@ -218,91 +218,15 @@ const withInterface = (interfaceConfig: Partial<NonNullable<TStartupConfig['inte
   data: { ...mockStartupConfig.data, interface: interfaceConfig },
 });
 
-test('states the consent, with a link to each policy the deployment configured', () => {
-  const { getByRole, getByText } = setup({
+test('does not render policy links or consent when policies are configured', () => {
+  const { queryByRole, queryByText } = setup({
     useGetStartupConfigReturnValue: withInterface({
       privacyPolicy: { externalUrl: 'https://example.com/privacy' },
       termsOfService: { externalUrl: 'https://example.com/terms' },
     }),
   });
 
-  expect(getByText(/By continuing, you agree to the/i)).toBeInTheDocument();
-
-  const terms = getByRole('link', { name: 'Terms of Service' });
-  expect(terms).toHaveAttribute('href', 'https://example.com/terms');
-  expect(terms).not.toHaveAttribute('target');
-
-  const privacy = getByRole('link', { name: 'Privacy Policy' });
-  expect(privacy).toHaveAttribute('href', 'https://example.com/privacy');
-  expect(privacy).not.toHaveAttribute('target');
-});
-
-test('claims agreement only to the policy the deployment published', () => {
-  const { getByRole, getByText, queryByRole } = setup({
-    useGetStartupConfigReturnValue: withInterface({
-      privacyPolicy: { externalUrl: 'https://example.com/privacy' },
-    }),
-  });
-
-  expect(getByText(/By continuing, you acknowledge the/i)).toBeInTheDocument();
-  expect(getByRole('link', { name: 'Privacy Policy' })).toBeInTheDocument();
+  expect(queryByText(/By continuing/i)).not.toBeInTheDocument();
+  expect(queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument();
   expect(queryByRole('link', { name: 'Terms of Service' })).not.toBeInTheDocument();
-});
-
-test('claims agreement to terms a deployment published without a privacy policy', () => {
-  const { getByRole, getByText, queryByRole } = setup({
-    useGetStartupConfigReturnValue: withInterface({
-      termsOfService: { externalUrl: 'https://example.com/terms' },
-    }),
-  });
-
-  expect(getByText(/By continuing, you agree to the/i)).toBeInTheDocument();
-  expect(getByRole('link', { name: 'Terms of Service' })).toBeInTheDocument();
-  expect(queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument();
-});
-
-/** `externalUrl` is an optional string, so an operator can set it to nothing.
- *  A blank one would link back to this page and name a policy that does not
- *  exist, which is worse than saying nothing. */
-test('treats a blank policy url as a policy the deployment never published', () => {
-  const { getByText, queryByRole } = setup({
-    useGetStartupConfigReturnValue: withInterface({
-      privacyPolicy: { externalUrl: '  ' },
-      termsOfService: { externalUrl: 'https://example.com/terms' },
-    }),
-  });
-
-  expect(getByText(/By continuing, you agree to the/i)).toBeInTheDocument();
-  expect(queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument();
-  expect(document.querySelector('a[href=""]')).toBeNull();
-});
-
-test('says nothing about policies a deployment never configured', () => {
-  const { queryByText } = setup();
-
-  expect(queryByText(/By continuing/i)).not.toBeInTheDocument();
-});
-
-/** A deployment that collects an explicit acceptance after sign-in is not one
- *  where continuing is the agreement, so the form states nothing. */
-test('says nothing on a deployment that accepts its terms in a modal', () => {
-  const { queryByText } = setup({
-    useGetStartupConfigReturnValue: withInterface({
-      privacyPolicy: { externalUrl: 'https://example.com/privacy' },
-      termsOfService: { externalUrl: 'https://example.com/terms', modalAcceptance: true },
-    }),
-  });
-
-  expect(queryByText(/By continuing/i)).not.toBeInTheDocument();
-});
-
-test('says nothing when every configured policy url is blank', () => {
-  const { queryByText } = setup({
-    useGetStartupConfigReturnValue: withInterface({
-      privacyPolicy: { externalUrl: '' },
-      termsOfService: { externalUrl: '' },
-    }),
-  });
-
-  expect(queryByText(/By continuing/i)).not.toBeInTheDocument();
 });

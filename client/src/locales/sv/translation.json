@@ -847,7 +847,6 @@
   "com_ui_import_conversation_file_type_error": "Importtyp som inte stöds",
   "com_ui_instructions": "Instruktioner",
   "com_ui_key": "Nyckel",
-  "com_ui_latest_footer": "AI för alla.",
   "com_ui_latest_version": "Senaste versionen",
   "com_ui_mcp_enter_var": "Ange värde för {{0}}",
   "com_ui_mcp_oauth_timeout": "OAuth-inloggningen tog slut för {{0}}",

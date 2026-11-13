@@ -32,7 +32,6 @@ import {
 import ApprovalProvider from '~/components/Chat/Messages/Content/ApprovalContext';
 import useNavigateToConvo from '~/hooks/Conversations/useNavigateToConvo';
 import { ARTIFACTS_SHEET_MAX_WIDTH } from '~/utils/breakpoints';
-import { useConfiguredFooter } from '~/components/Chat/Footer';
 import useScaledMaxWidth from '~/hooks/useScaledMaxWidth';
 import { useAgentsMapContext } from './AgentsMapContext';
 
@@ -206,7 +205,7 @@ export const appSubagentsHost: SubagentsHost = {
   useToolCallPart,
   useNavigation,
   useSheetLayout: () => useScaledMaxWidth(ARTIFACTS_SHEET_MAX_WIDTH),
-  useClearsFooter: useConfiguredFooter,
+  useClearsFooter: () => false,
   renderApprovalScope: ({ scopeKey, children }) => (
     <ApprovalProvider key={scopeKey}>{children}</ApprovalProvider>
   ),

@@ -63,13 +63,6 @@ jest.mock('../Presentation', () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-jest.mock('../Footer', () => ({
-  __esModule: true,
-  default: () => null,
-  useConfiguredFooter: () => false,
-  useLandingFooter: () => true,
-}));
-
 const screenSlots = (): ChatScreenMessagesSlots => {
   render(<ChatView />);
   const props = mockScreenProps.mock.calls.at(-1)?.[0];

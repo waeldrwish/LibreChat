@@ -17,7 +17,6 @@ import type { TRegisterUser, TError } from 'librechat-data-provider';
 import type { TLoginLayoutContext } from '~/common';
 import { useLocalize, TranslationKeys } from '~/hooks';
 import { ErrorMessage } from './ErrorMessage';
-import LegalConsent from './LegalConsent';
 
 const Registration: React.FC = () => {
   const navigate = useNavigate();
@@ -240,10 +239,6 @@ const Registration: React.FC = () => {
                 {isSubmitting ? <Spinner /> : localize('com_auth_continue')}
               </Button>
             </div>
-
-            {/* Under the button it is agreed to, and read before the account is
-                created; the auth layout drops its footer bar in exchange. */}
-            <LegalConsent startupConfig={startupConfig} />
           </form>
 
           <p className="text-text-secondary my-4 text-center text-sm font-light">

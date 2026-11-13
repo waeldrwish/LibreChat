@@ -15,21 +15,17 @@ import { bundledThemeBoot, injectThemeCacheVersion } from './src/Providers/bootV
 const require = createRequire(import.meta.url);
 
 /**
- * vite-plugin-node-polyfills uses @rollup/plugin-inject to replace bare globals (e.g. `process`)
- * with imports like `import process from 'vite-plugin-node-polyfills/shims/process'`. When the
- * consuming module (e.g. recoil) is hoisted to the monorepo root, Vite's ESM resolver walks up
- * from there and never finds the shims (installed only in client/node_modules). This map resolves
- * the shim specifiers to absolute paths via CJS require.resolve anchored to the client directory.
+ * Resolve injected Node global shims to the polyfill modules provided by the installed packages.
  */
 const NODE_POLYFILL_SHIMS: Record<string, string> = {
   'vite-plugin-node-polyfills/shims/process': require.resolve(
-    'vite-plugin-node-polyfills/shims/process',
+    '@esbuild-plugins/node-globals-polyfill/process',
   ),
   'vite-plugin-node-polyfills/shims/buffer': require.resolve(
-    'vite-plugin-node-polyfills/shims/buffer',
+    '@esbuild-plugins/node-globals-polyfill/Buffer',
   ),
   'vite-plugin-node-polyfills/shims/global': require.resolve(
-    'vite-plugin-node-polyfills/shims/global',
+    'rollup-plugin-node-polyfills/polyfills/global.js',
   ),
 };
 
