@@ -69,6 +69,20 @@ html[data-input-modality='pointer'] .lc-field.webkit-dark-styles:focus-visible {
   -webkit-text-fill-color: rgb(var(--field-text, var(--text-primary)));
 }
 
+/* Chrome paints an autofilled field with its own light-blue background and dark text, which
+   made the sign-in email field nearly unreadable on the dark theme. The autofill pseudo-class
+   carries the theme's field fill as an inset shadow (the mask above) and the theme's text color
+   in both light and dark mode, and the long background transition keeps the UA fill from
+   flashing back in. */
+.webkit-dark-styles:-webkit-autofill,
+.webkit-dark-styles:-webkit-autofill:hover,
+.webkit-dark-styles:-webkit-autofill:focus {
+  box-shadow: var(--lc-autofill-mask);
+  -webkit-text-fill-color: rgb(var(--field-text, var(--text-primary)));
+  caret-color: rgb(var(--field-text, var(--text-primary)));
+  transition: background-color 9999s ease-out 0s;
+}
+
 /* A control outside `.lc-field` that carries `lc-own-focus` (the framed and flush editors) has
    its own ring, or a frame that owns the indicator, so the app's global focus outline for
    non-`.lc-field` textareas would add a second one. `:root` lifts this above that rule's
