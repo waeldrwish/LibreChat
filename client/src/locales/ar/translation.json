@@ -4037,7 +4037,6 @@
   "com_files_sharepoint_download_partial": "تم تنزيل {{downloaded}} من {{total}} ملفات من SharePoint ({{failed}} فشلت)",
   "com_files_sharepoint_download_success": "تم تنزيل {{count}} من الملفات من SharePoint بنجاح",
   "com_files_sharepoint_download_failed": "فشل التنزيل من SharePoint: {{error}}",
-  "com_files_sharepoint_no_token": "لا يتوفر رمز مصادقة",
   "com_files_sharepoint_unavailable": "تعذّر الوصول إلى SharePoint. تأكد من تسجيل دخولك بحساب Microsoft.",
   "com_files_sharepoint_picker_failed": "تعذّر فتح منتقي ملفات SharePoint.",
   "com_files_sharepoint_auth_failed": "فشلت المصادقة مع SharePoint",

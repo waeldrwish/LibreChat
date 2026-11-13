@@ -4026,7 +4026,6 @@
   "com_files_sharepoint_download_partial": "Downloaded {{downloaded}}/{{total}} files from SharePoint ({{failed}} failed)",
   "com_files_sharepoint_download_success": "Successfully downloaded {{count}} file(s) from SharePoint",
   "com_files_sharepoint_download_failed": "SharePoint download failed: {{error}}",
-  "com_files_sharepoint_no_token": "No authentication token available",
   "com_files_sharepoint_unavailable": "Unable to access SharePoint. Please ensure you are logged in with Microsoft.",
   "com_files_sharepoint_picker_failed": "Failed to open SharePoint file picker.",
   "com_files_sharepoint_auth_failed": "Failed to authenticate with SharePoint",
