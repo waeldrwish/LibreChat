@@ -5,6 +5,7 @@ import type { SPPickerConfig } from '~/components/SidePanel/Agents/config';
 import { useLocalize, useAuthContext } from '~/hooks';
 import { useGetStartupConfig } from '~/data-provider';
 import useSharePointToken from './useSharePointToken';
+import { DEFAULT_LOCALE } from '~/locales/i18n';
 import store from '~/store';
 
 interface UseSharePointPickerProps {
@@ -298,7 +299,7 @@ export default function useSharePointPicker({
 
         const queryString = new URLSearchParams({
           filePicker: JSON.stringify(pickerOptions),
-          locale: langcode || 'en-US',
+          locale: langcode || DEFAULT_LOCALE,
         });
 
         const url = sharePointBaseUrl + `/_layouts/15/FilePicker.aspx?${queryString}`;

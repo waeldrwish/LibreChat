@@ -7,6 +7,7 @@ import type { TranslationKeys } from '~/hooks';
 import { ThemeSelector, LangSelector } from '~/components/Appearance';
 import { BetaPill } from '~/components/SidePanel/Agents/Advanced/ui';
 import ToggleSwitch from '../SettingsTabs/ToggleSwitch';
+import { DEFAULT_LOCALE } from '~/locales/i18n';
 import store from '~/store';
 
 export function toggleControl(opts: {
@@ -42,7 +43,7 @@ export function LangSetting() {
   const onChange = useCallback(
     (value: string) => {
       const userLang =
-        value === 'auto' ? navigator.language || navigator.languages?.[0] || 'en-US' : value;
+        value === 'auto' ? navigator.language || navigator.languages?.[0] || DEFAULT_LOCALE : value;
       setLangcode(userLang);
       Cookies.set('lang', userLang, { expires: 365 });
     },

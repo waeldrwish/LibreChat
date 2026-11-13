@@ -1,9 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+import translationAr from './ar/translation.json';
 import translationEn from './en/translation.json';
 
 export const defaultNS = 'translation';
+
+/** Language used until the user chooses another one (cookie or stored setting). */
+export const DEFAULT_LOCALE = 'ar' as const;
 
 export const supportedLocales = [
   'ar',
@@ -56,6 +60,7 @@ export type SupportedLocale = (typeof supportedLocales)[number];
 export type TranslationResource = Record<string, string>;
 
 export const resources = {
+  ar: { translation: translationAr },
   en: { translation: translationEn },
 } as const;
 
@@ -156,10 +161,10 @@ const localeAliases: Record<string, SupportedLocale> = {
   'zh-mo': 'zh-Hant',
 };
 
-const loadedLocales = new Set<SupportedLocale>(['en']);
+const loadedLocales = new Set<SupportedLocale>(['en', DEFAULT_LOCALE]);
 const loadingLocales: Partial<Record<SupportedLocale, Promise<SupportedLocale>>> = {};
 let languageRequestId = 0;
-let latestRequestedLocale: SupportedLocale = 'en';
+let latestRequestedLocale: SupportedLocale = DEFAULT_LOCALE;
 
 function readCookie(name: string) {
   if (typeof document === 'undefined') {
@@ -194,16 +199,16 @@ function readStoredLanguage() {
 
 function getNavigatorLanguage() {
   if (typeof navigator === 'undefined') {
-    return 'en';
+    return DEFAULT_LOCALE;
   }
 
-  return navigator.language || navigator.languages?.[0] || 'en';
+  return navigator.language || navigator.languages?.[0] || DEFAULT_LOCALE;
 }
 
 export function normalizeLocale(locale?: string | null): SupportedLocale {
   const requested = locale === 'auto' ? getNavigatorLanguage() : locale;
   if (!requested) {
-    return 'en';
+    return DEFAULT_LOCALE;
   }
 
   const normalized = requested.replace(/_/g, '-').toLowerCase();
@@ -224,7 +229,7 @@ export function normalizeLocale(locale?: string | null): SupportedLocale {
 export function detectInitialLanguage() {
   const cookieLang = readCookie('lang');
   const storedLang = readStoredLanguage();
-  return normalizeLocale(cookieLang || storedLang || getNavigatorLanguage());
+  return normalizeLocale(cookieLang || storedLang || DEFAULT_LOCALE);
 }
 
 export async function ensureLocale(locale?: string | null): Promise<SupportedLocale> {
@@ -292,7 +297,7 @@ export function syncDocumentLanguage(locale: SupportedLocale) {
 }
 
 export const i18nInitPromise = i18n.use(initReactI18next).init({
-  lng: 'en',
+  lng: DEFAULT_LOCALE,
   fallbackLng: {
     'zh-TW': ['zh-Hant', 'en'],
     'zh-HK': ['zh-Hant', 'en'],

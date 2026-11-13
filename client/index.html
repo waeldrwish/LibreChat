@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-US">
+<html lang="ar">
   <head>
     <meta charset="utf-8" />
     <base href="/" />
@@ -60,7 +60,8 @@
             /* Stored unquoted, or Web Storage denied: the raw value or the browser language. */
           }
         }
-        lang = String(lang || navigator.language || '').toLowerCase();
+        /* Arabic when no language is stored, matching DEFAULT_LOCALE in i18n.ts. */
+        lang = String(lang || 'ar').toLowerCase();
         if (['ar', 'he', 'fa', 'ug'].indexOf(lang.split(/[-_]/)[0]) !== -1) {
           document.documentElement.dir = 'rtl';
         }

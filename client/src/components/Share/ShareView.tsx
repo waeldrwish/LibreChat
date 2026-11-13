@@ -38,6 +38,7 @@ import { useGetSharedStartupConfig } from '~/data-provider';
 import { ShareArtifactsContainer } from './ShareArtifacts';
 import AnalyticsConsent from '../System/AnalyticsConsent';
 import { hasAnalyticsGtmId } from '~/store/analytics';
+import { DEFAULT_LOCALE } from '~/locales/i18n';
 import AppChatSurface from '../Chat/Surface';
 import { ShareContext } from '~/Providers';
 import MessagesView from './MessagesView';
@@ -151,8 +152,8 @@ function SharedView() {
   const locale =
     langcode ||
     (typeof navigator !== 'undefined'
-      ? navigator.language || navigator.languages?.[0] || 'en-US'
-      : 'en-US');
+      ? navigator.language || navigator.languages?.[0] || DEFAULT_LOCALE
+      : DEFAULT_LOCALE);
 
   const formattedDate =
     data?.createdAt != null
@@ -177,7 +178,7 @@ function SharedView() {
         userLang =
           (typeof navigator !== 'undefined'
             ? navigator.language || navigator.languages?.[0]
-            : null) ?? 'en-US';
+            : null) ?? DEFAULT_LOCALE;
       }
 
       setLangcode(userLang);

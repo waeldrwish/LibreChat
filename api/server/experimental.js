@@ -598,10 +598,11 @@ if (cluster.isMaster) {
       res.set(shellCache);
       res.vary(QUERY_DEVTOOLS_HEADER);
 
-      const lang = req.cookies.lang || req.headers['accept-language']?.split(',')[0] || 'en-US';
+      /* Arabic is the default interface language; the lang cookie overrides it. */
+      const lang = req.cookies.lang || 'ar';
       const saneLang = escapeHtmlAttribute(lang);
       let updatedIndexHtml = indexShell(req, res).replace(
-        /lang="en-US"/g,
+        /<html lang="[^"]*"/,
         () => `lang="${saneLang}"`,
       );
       updatedIndexHtml = maybeInjectQueryDevtoolsBootstrap(updatedIndexHtml, req);
