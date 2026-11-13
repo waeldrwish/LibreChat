@@ -1162,7 +1162,7 @@ describe('CodeWorkspaceMenu', () => {
     };
     store.set(
       codeEnvironmentReconciliationsAtom,
-      new Map([['existing', { request, status: 'error', token: Symbol() }]]),
+      new Map([['existing', { request, status: 'error' as const, token: Symbol() }]]),
     );
     let resolveRead!: (value: TConversation) => void;
     const read = jest.spyOn(dataService, 'getConversationById').mockImplementationOnce(
