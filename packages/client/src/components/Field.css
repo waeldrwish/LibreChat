@@ -69,15 +69,18 @@ html[data-input-modality='pointer'] .lc-field.webkit-dark-styles:focus-visible {
   -webkit-text-fill-color: rgb(var(--field-text, var(--text-primary)));
 }
 
-/* Chrome paints an autofilled field with its own light-blue background and dark text, which
-   made the sign-in email field nearly unreadable on the dark theme. The autofill pseudo-class
-   carries the theme's field fill as an inset shadow (the mask above) and the theme's text color
-   in both light and dark mode, and the long background transition keeps the UA fill from
-   flashing back in. */
-.webkit-dark-styles:-webkit-autofill,
-.webkit-dark-styles:-webkit-autofill:hover,
-.webkit-dark-styles:-webkit-autofill:focus {
-  box-shadow: var(--lc-autofill-mask);
+/* Chrome paints an autofilled field with a light-blue background and dark text, which made the
+   sign-in email field nearly unreadable on the dark theme. This rule carries the theme's field
+   fill (the mask) and text color in both modes, and the long background transition keeps the
+   UA fill from flashing back in. Chrome's autofill background cannot be overridden by any normal or !important author
+   background-color, so the mask has to win on the box-shadow. The focus rules above and the
+   pointer-focus reset below set box-shadow to none, which dropped the mask on focus and let the
+   light-blue fill show, so the autofill selectors here are more specific and !important. */
+html .lc-field.webkit-dark-styles:-webkit-autofill,
+html .lc-field.webkit-dark-styles:-webkit-autofill:hover,
+html .lc-field.webkit-dark-styles:-webkit-autofill:focus,
+html .lc-field.webkit-dark-styles:-webkit-autofill:focus-visible {
+  box-shadow: var(--lc-autofill-mask) !important;
   -webkit-text-fill-color: rgb(var(--field-text, var(--text-primary)));
   caret-color: rgb(var(--field-text, var(--text-primary)));
   transition: background-color 9999s ease-out 0s;
