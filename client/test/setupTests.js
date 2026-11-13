@@ -77,3 +77,6 @@ jest.mock('react-i18next', () => {
     },
   };
 });
+
+// Tests assert English copy; the app default locale is Arabic (see DEFAULT_LOCALE in src/locales/i18n.ts).
+require('~/locales/i18n').default.changeLanguage('en');
