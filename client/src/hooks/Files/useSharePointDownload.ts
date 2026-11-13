@@ -3,6 +3,7 @@ import { useToastContext } from '@librechat/client';
 import type { SharePointFile, SharePointBatchProgress } from '~/data-provider/Files';
 import { useSharePointBatchDownload } from '~/data-provider/Files';
 import useSharePointToken from './useSharePointToken';
+import { useLocalize } from '~/hooks';
 
 interface UseSharePointDownloadProps {
   onFilesDownloaded?: (files: File[]) => void | Promise<void>;
@@ -21,6 +22,7 @@ export default function useSharePointDownload({
   onError,
 }: UseSharePointDownloadProps = {}): UseSharePointDownloadReturn {
   const { showToast } = useToastContext();
+  const localize = useLocalize();
   const [downloadProgress, setDownloadProgress] = useState<SharePointBatchProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ export default function useSharePointDownload({
         let accessToken = token?.access_token;
         if (!accessToken) {
           showToast({
-            message: 'Getting SharePoint access token...',
+            message: localize('com_files_sharepoint_token_fetching'),
             status: 'info',
             duration: 2000,
           });
@@ -53,12 +55,12 @@ export default function useSharePointDownload({
           accessToken = tokenResult.data?.access_token;
 
           if (!accessToken) {
-            throw new Error('Failed to obtain SharePoint access token');
+            throw new Error(localize('com_files_sharepoint_token_failed'));
           }
         }
 
         showToast({
-          message: `Downloading ${files.length} file(s) from SharePoint...`,
+          message: localize('com_files_sharepoint_downloading', { count: files.length }),
           status: 'info',
           duration: 3000,
         });
@@ -71,7 +73,10 @@ export default function useSharePointDownload({
 
             if (files.length > 5 && progress.completed % 3 === 0) {
               showToast({
-                message: `Downloaded ${progress.completed}/${progress.total} files...`,
+                message: localize('com_files_sharepoint_download_progress', {
+                  completed: progress.completed,
+                  total: progress.total,
+                }),
                 status: 'info',
                 duration: 1000,
               });
@@ -83,8 +88,14 @@ export default function useSharePointDownload({
           const failedCount = files.length - downloadedFiles.length;
           const successMessage =
             failedCount > 0
-              ? `Downloaded ${downloadedFiles.length}/${files.length} files from SharePoint (${failedCount} failed)`
-              : `Successfully downloaded ${downloadedFiles.length} file(s) from SharePoint`;
+              ? localize('com_files_sharepoint_download_partial', {
+                  downloaded: downloadedFiles.length,
+                  total: files.length,
+                  failed: failedCount,
+                })
+              : localize('com_files_sharepoint_download_success', {
+                  count: downloadedFiles.length,
+                });
 
           showToast({
             message: successMessage,
@@ -104,7 +115,7 @@ export default function useSharePointDownload({
         setError(errorMessage);
 
         showToast({
-          message: `SharePoint download failed: ${errorMessage}`,
+          message: localize('com_files_sharepoint_download_failed', { error: errorMessage }),
           status: 'error',
           duration: 5000,
         });
@@ -117,7 +128,7 @@ export default function useSharePointDownload({
         throw error;
       }
     },
-    [token, showToast, batchDownloadMutation, onFilesDownloaded, onError, refetchToken],
+    [token, showToast, localize, batchDownloadMutation, onFilesDownloaded, onError, refetchToken],
   );
 
   return {

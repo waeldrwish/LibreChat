@@ -216,7 +216,7 @@ export default function useSharePointPicker({
   const openSharePointPicker = async () => {
     if (!token) {
       showToast({
-        message: 'Unable to access SharePoint. Please ensure you are logged in with Microsoft.',
+        message: localize('com_files_sharepoint_unavailable'),
         status: 'error',
       });
       return;
@@ -320,7 +320,7 @@ export default function useSharePointPicker({
     } catch (error) {
       console.error('SharePoint file picker error:', error);
       showToast({
-        message: 'Failed to open SharePoint file picker.',
+        message: localize('com_files_sharepoint_picker_failed'),
         status: 'error',
       });
     }
@@ -362,7 +362,7 @@ export default function useSharePointPicker({
   return {
     openSharePointPicker: isAvailable ? openSharePointPicker : () => {},
     closeSharePointPicker: handleDialogClose,
-    error: tokenError ? 'Failed to authenticate with SharePoint' : null,
+    error: tokenError ? localize('com_files_sharepoint_auth_failed') : null,
     cleanup,
     isTokenLoading,
   };

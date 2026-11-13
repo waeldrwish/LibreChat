@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { useToastContext } from '@librechat/client';
 import { useSpeechToTextMutation } from '~/data-provider';
+import { useLocalize } from '~/hooks';
 import store from '~/store';
 
 export const getBestSupportedMimeType = (
@@ -41,6 +42,7 @@ const useSpeechToTextExternal = (
   autoSendText: number,
 ) => {
   const { showToast } = useToastContext();
+  const localize = useLocalize();
   const audioStream = useRef<MediaStream | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -148,7 +150,7 @@ const useSpeechToTextExternal = (
         },
         onError: () => {
           showToast({
-            message: 'An error occurred while processing the audio, maybe the audio was too short',
+            message: localize('com_ui_stt_error_processing'),
             status: 'error',
           });
           setIsRequestBeingMade(false);
@@ -156,7 +158,7 @@ const useSpeechToTextExternal = (
         },
       });
     } else {
-      showToast({ message: 'The audio was too short', status: 'warning' });
+      showToast({ message: localize('com_ui_stt_audio_too_short'), status: 'warning' });
       onTranscriptionSettled(recordingTakeIdRef.current);
     }
   };
@@ -256,7 +258,7 @@ const useSpeechToTextExternal = (
         showToast({ message: `Error starting recording: ${error}`, status: 'error' });
       }
     } else {
-      showToast({ message: 'Microphone permission not granted', status: 'error' });
+      showToast({ message: localize('com_ui_stt_mic_permission_denied'), status: 'error' });
     }
   };
 
@@ -293,7 +295,7 @@ const useSpeechToTextExternal = (
   };
   const externalStartRecording = (takeId?: number) => {
     if (isListening) {
-      showToast({ message: 'Already listening. Please stop recording first.', status: 'warning' });
+      showToast({ message: localize('com_ui_stt_already_listening'), status: 'warning' });
       return;
     }
 
@@ -303,7 +305,7 @@ const useSpeechToTextExternal = (
   const externalStopRecording = () => {
     if (!isListening) {
       showToast({
-        message: 'Not currently recording. Please start recording first.',
+        message: localize('com_ui_stt_not_recording'),
         status: 'warning',
       });
       return;
