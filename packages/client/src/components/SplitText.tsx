@@ -69,6 +69,8 @@ const getSegmenter = (): IntlSegmenter | null => {
   return segmenter;
 };
 
+const CURSIVE_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
 const splitGraphemes = (text: string): string[] => {
   const instance = getSegmenter();
   if (instance) {
@@ -91,7 +93,12 @@ const SplitText: React.FC<SplitTextProps> = ({
   onLineCountChange,
 }) => {
   const { words, letterCount, offsets } = useMemo(() => {
-    const split = text.split(' ').map(splitGraphemes);
+    /* Cursive scripts (Arabic, Persian, Urdu) join letters within a word, so splitting
+     * them into separate spans breaks the shaping. Keep such words whole and animate
+     * them as one unit; other scripts still animate per letter. */
+    const split = text
+      .split(' ')
+      .map((word) => (CURSIVE_SCRIPT.test(word) ? [word] : splitGraphemes(word)));
     const starts: number[] = [];
     let total = 0;
     for (const w of split) {
