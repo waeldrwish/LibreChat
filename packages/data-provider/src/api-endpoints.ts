@@ -635,6 +635,14 @@ export const toolFavorite = (itemType: string, itemId: string) =>
 /* Roles */
 export const roles = () => `${BASE_URL}/api/roles`;
 export const adminRoles = () => `${BASE_URL}/api/admin/roles`;
+
+/* Admin panel (in-app /admin) */
+export const adminPanelSummary = () => `${BASE_URL}/api/admin/panel/summary`;
+export const adminPanelUsage = (query: string) => `${BASE_URL}/api/admin/panel/usage?${query}`;
+export const adminPanelUsers = () => `${BASE_URL}/api/admin/panel/users`;
+export const adminUsersList = (query: string) => `${BASE_URL}/api/admin/users?${query}`;
+export const adminPanelUserBalance = (userId: string) =>
+  `${BASE_URL}/api/admin/panel/users/${encodeURIComponent(userId)}/balance`;
 export const getRole = (roleName: string) => `${roles()}/${encodeURIComponent(roleName)}`;
 export const updatePromptPermissions = (roleName: string) => `${getRole(roleName)}/prompts`;
 export const updateMemoryPermissions = (roleName: string) => `${getRole(roleName)}/memories`;

@@ -376,25 +376,23 @@ router.get('/', async function (req, res) {
       payload.buildInfo = buildInfo;
     }
 
-    const adminPanelURL = process.env.ADMIN_PANEL_URL;
-    if (adminPanelURL || !payload.allowAccountDeletion) {
-      try {
-        const userId = req.user.id ?? req.user._id?.toString();
-        if (userId) {
-          const hasAdminAccess = await hasCapability(
-            { id: userId, role: req.user.role ?? '', tenantId: req.user.tenantId },
-            SystemCapabilities.ACCESS_ADMIN,
-          );
-          if (hasAdminAccess && adminPanelURL) {
-            payload.adminPanelURL = adminPanelURL;
-          }
-          if (hasAdminAccess && !payload.allowAccountDeletion) {
-            payload.allowAccountDeletion = true;
-          }
+    /** The in-app admin panel lives at `/admin`; only users holding ACCESS_ADMIN get the link. */
+    try {
+      const userId = req.user.id ?? req.user._id?.toString();
+      if (userId) {
+        const hasAdminAccess = await hasCapability(
+          { id: userId, role: req.user.role ?? '', tenantId: req.user.tenantId },
+          SystemCapabilities.ACCESS_ADMIN,
+        );
+        if (hasAdminAccess) {
+          payload.adminPanelURL = '/admin';
         }
-      } catch (err) {
-        logger.warn(`[config] ACCESS_ADMIN capability check failed: ${err.message}`);
+        if (hasAdminAccess && !payload.allowAccountDeletion) {
+          payload.allowAccountDeletion = true;
+        }
       }
+    } catch (err) {
+      logger.warn(`[config] ACCESS_ADMIN capability check failed: ${err.message}`);
     }
 
     return res.status(200).send(payload);

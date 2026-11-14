@@ -35,3 +35,17 @@ export type { AdminAuditLogDeps } from './auditLog';
 export type { CascadeStep, CascadeOutcome } from './cascade';
 export type { AdminCodeEnvironmentDeps } from './code';
 export type { AdminAuditEmitter, AdminAuditEvent, RecordAuditEntry } from './audit';
+export {
+  createAdminPanelHandlers,
+  parseBalanceUpdate,
+  parseGroupBy,
+  parseNewAccount,
+  parseSpendRange,
+} from './panel';
+export type {
+  AdminPanelDeps,
+  AdminPanelHandlers,
+  PanelBalance,
+  SpendGroupBy,
+  SpendRow,
+} from './panel';

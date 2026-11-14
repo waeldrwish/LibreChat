@@ -1,5 +1,5 @@
 import { isBalanceRefillDue } from 'librechat-data-provider';
-import type { AnyBulkWriteOperation, FilterQuery, Model, Types } from 'mongoose';
+import type { AnyBulkWriteOperation, FilterQuery, Model, PipelineStage, Types } from 'mongoose';
 import type { TCustomConfig } from 'librechat-data-provider';
 import type {
   BalanceReservationRequest,
@@ -149,6 +149,20 @@ export function createTransactionMethods(
   renewBalanceReservation: (params: BalanceReservationRenewal) => Promise<void>;
   releaseBalanceReservation: (params: BalanceReservationRelease) => Promise<void>;
   createStructuredTransaction: (_txData: TxData) => Promise<TransactionResult | undefined>;
+  aggregateSpend: (params: {
+    from: Date;
+    to: Date;
+    groupBy: 'none' | 'user' | 'model';
+    limit?: number;
+  }) => Promise<
+    Array<{
+      key: string | null;
+      spentCredits: number;
+      requests: number;
+      inputTokens: number;
+      outputTokens: number;
+    }>
+  >;
 } {
   /** Calculate and set the tokenValue for a transaction */
   function calculateTokenValue(txn: InternalTxDoc) {
@@ -861,6 +875,63 @@ export function createTransactionMethods(
     ).lean<IBalance>();
   }
 
+  /**
+   * Aggregates spend (negative `tokenValue` rows) in a date range. `groupBy: 'none'` returns one
+   * totals row with a null key. Prompt rows count as requests; prompt and completion `rawAmount`
+   * give input and output token totals.
+   */
+  async function aggregateSpend(params: {
+    from: Date;
+    to: Date;
+    groupBy: 'none' | 'user' | 'model';
+    limit?: number;
+  }): Promise<
+    Array<{
+      key: string | null;
+      spentCredits: number;
+      requests: number;
+      inputTokens: number;
+      outputTokens: number;
+    }>
+  > {
+    const Transaction = mongoose.models.Transaction as Model<ITransaction>;
+    const keyExpr = { none: null, user: '$user', model: '$model' }[params.groupBy];
+    const rawTokens = { $abs: { $ifNull: ['$rawAmount', 0] } };
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          createdAt: { $gte: params.from, $lte: params.to },
+          tokenValue: { $lt: 0 },
+        },
+      },
+      {
+        $group: {
+          _id: keyExpr,
+          spentCredits: { $sum: { $abs: '$tokenValue' } },
+          requests: { $sum: { $cond: [{ $eq: ['$tokenType', 'prompt'] }, 1, 0] } },
+          inputTokens: {
+            $sum: { $cond: [{ $eq: ['$tokenType', 'prompt'] }, rawTokens, 0] },
+          },
+          outputTokens: {
+            $sum: { $cond: [{ $eq: ['$tokenType', 'completion'] }, rawTokens, 0] },
+          },
+        },
+      },
+      { $sort: { spentCredits: -1 } },
+    ];
+    if (params.limit) {
+      pipeline.push({ $limit: params.limit });
+    }
+    const rows = await Transaction.aggregate(pipeline);
+    return rows.map((row) => ({
+      key: row._id == null ? null : String(row._id),
+      spentCredits: row.spentCredits ?? 0,
+      requests: row.requests ?? 0,
+      inputTokens: row.inputTokens ?? 0,
+      outputTokens: row.outputTokens ?? 0,
+    }));
+  }
+
   return {
     initializeNullBalance,
     updateBalance,
@@ -875,6 +946,7 @@ export function createTransactionMethods(
     renewBalanceReservation,
     releaseBalanceReservation,
     createStructuredTransaction,
+    aggregateSpend,
   };
 }
 

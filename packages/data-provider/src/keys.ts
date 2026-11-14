@@ -132,6 +132,10 @@ export enum QueryKeys {
   agentQueuedTurns = 'agentQueuedTurns',
   /* Combined Pinned-section display order (favorites + pinned chats) */
   pinnedOrder = 'pinnedOrder',
+  adminPanelSummary = 'adminPanelSummary',
+  adminPanelUsage = 'adminPanelUsage',
+  adminPanelUsers = 'adminPanelUsers',
+  adminPanelBalance = 'adminPanelBalance',
 }
 
 // Dynamic query keys that require parameters

@@ -43,6 +43,11 @@ const loadSkillsView = () =>
     Component: m.default,
   }));
 
+const loadAdminView = () =>
+  importWithRecovery(() => import('~/components/Admin/AdminPanel')).then((m) => ({
+    Component: m.default,
+  }));
+
 const loadInsightsView = () =>
   importWithRecovery(() => import('~/components/Insights')).then((m) => ({
     Component: m.default,
@@ -175,6 +180,10 @@ export const router = createBrowserRouter(
                 {
                   path: 'skills',
                   lazy: loadSkillsView,
+                },
+                {
+                  path: 'admin',
+                  lazy: loadAdminView,
                 },
                 {
                   path: 'insights',

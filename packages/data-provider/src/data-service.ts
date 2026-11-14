@@ -2235,3 +2235,90 @@ export function revokeScheduleMCPConsent(id: string, expectedRevision: string): 
     data: { expectedRevision },
   });
 }
+
+/* Admin panel (in-app /admin) */
+export interface AdminPanelSummary {
+  users: number;
+  range: { from: string; to: string };
+  spentCredits: number;
+  requests: number;
+  inputTokens: number;
+}
+
+export interface AdminPanelUsageRow {
+  key: string | null;
+  label: string | null;
+  spentCredits: number;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface AdminPanelUsage {
+  groupBy: 'user' | 'model';
+  range: { from: string; to: string };
+  rows: AdminPanelUsageRow[];
+}
+
+export interface AdminPanelBalance {
+  tokenCredits: number;
+  autoRefillEnabled: boolean;
+  refillIntervalValue: number;
+  refillIntervalUnit: string;
+  refillAmount: number;
+}
+
+export function getAdminPanelSummary(): Promise<AdminPanelSummary> {
+  return request.get(endpoints.adminPanelSummary());
+}
+
+export function getAdminPanelUsage(params: {
+  groupBy: 'user' | 'model';
+  from?: string;
+  to?: string;
+}): Promise<AdminPanelUsage> {
+  const query = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v != null && v !== '') as [string, string][],
+  ).toString();
+  return request.get(endpoints.adminPanelUsage(query));
+}
+
+export function createAdminPanelUser(body: {
+  email: string;
+  name?: string;
+  password: string;
+  role?: 'USER' | 'ADMIN';
+}): Promise<{ id: string; email: string; name: string; role: string }> {
+  return request.post(endpoints.adminPanelUsers(), body);
+}
+
+export function getAdminPanelBalance(userId: string): Promise<AdminPanelBalance> {
+  return request.get(endpoints.adminPanelUserBalance(userId));
+}
+
+export function updateAdminPanelBalance(
+  userId: string,
+  body: Partial<AdminPanelBalance>,
+): Promise<AdminPanelBalance> {
+  return request.put(endpoints.adminPanelUserBalance(userId), body);
+}
+
+export interface AdminPanelUserListItem {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
+  provider: string;
+  createdAt?: string;
+}
+
+export function listAdminPanelUsers(
+  limit = 50,
+  offset = 0,
+): Promise<{
+  users: AdminPanelUserListItem[];
+  total: number;
+}> {
+  return request.get(endpoints.adminUsersList(`limit=${limit}&offset=${offset}`));
+}
