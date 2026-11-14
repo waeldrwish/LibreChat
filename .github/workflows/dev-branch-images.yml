@@ -43,7 +43,6 @@ jobs:
         ${{ github.sha }}
         latest
       build_branch: ${{ github.ref_name }}
-      push_dockerhub: ${{ github.event.inputs.push_dockerhub }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
